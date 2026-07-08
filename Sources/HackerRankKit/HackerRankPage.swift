@@ -1,0 +1,54 @@
+//
+//  HackerRankPage.swift
+//  HackerRankKit
+//
+
+import Foundation
+import PaginatedRESTClient
+
+/// The HackerRank for Work list-response envelope: `{ "data": [...], "next": "<url>", ... }`.
+///
+/// HackerRank paginates by `offset`/`limit` and returns an absolute `next` URL for the
+/// following page. `total` is deliberately reported as `nil` so the transport uses its
+/// sequential `next`-walk rather than its page-number fast path, which assumes
+/// `?page=N` URLs HackerRank does not honour. Pagination metadata other than `data`
+/// and `next` is ignored.
+///
+/// `data` is decoded **leniently**: any single record that fails to decode is dropped
+/// rather than failing the whole page, so one malformed item on a live account never breaks
+/// the entire list. The models are already resilient (every non-identifying field optional);
+/// this is the page-level backstop.
+public nonisolated struct HackerRankPage<Item: Decodable & Sendable>: PagedResponse {
+    public let data: [Item]
+    public let next: String?
+    /// The collection's total size from the envelope's `total` field, when present. Kept separate
+    /// from the protocol's `total` (below, deliberately `nil`); used to fan out a bounded
+    /// collection's remaining pages in parallel by offset.
+    public let totalCount: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case data
+        case next
+        case total
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let lenient = try container.decode([LenientElement<Item>].self, forKey: .data)
+        data = lenient.compactMap(\.value)
+        next = try container.decodeIfPresent(String.self, forKey: .next)
+        totalCount = try? container.decodeIfPresent(Int.self, forKey: .total)
+    }
+
+    public var pageItems: [Item] {
+        data
+    }
+
+    public var nextPage: String? {
+        next
+    }
+
+    public var total: Int? {
+        nil
+    }
+}
