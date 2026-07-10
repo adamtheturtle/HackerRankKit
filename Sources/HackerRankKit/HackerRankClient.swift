@@ -357,6 +357,15 @@ public struct HackerRankClient {
         return try await rest.send(CreatedInterview.self, method: "POST", path: "\(Self.apiV3)/interviews", body: body)
     }
 
+    /// Creates an instant Pad collaborative interview.
+    ///
+    /// Alias for `createQuickPad(title:)` retained for app call sites that use the product-facing
+    /// "Pad" naming.
+    @discardableResult
+    public func createPad(title: String? = nil) async throws -> CreatedInterview {
+        try await createQuickPad(title: title)
+    }
+
     /// Schedules an interview (`POST /interviews`). The start time is sent as an
     /// ISO-8601 timestamp.
     @discardableResult
