@@ -209,15 +209,19 @@ public struct HackerRankClient {
 
     /// Creates a test (`POST /tests`).
     @discardableResult
-    public func createTest(name: String) async throws -> CreatedTest {
-        let body = CreateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines))
+    public func createTest(name: String, options: TestWriteOptions = TestWriteOptions()) async throws -> CreatedTest {
+        let body = CreateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines), options: options)
         return try await rest.send(CreatedTest.self, method: "POST", path: "\(Self.apiV3)/tests", body: body)
     }
 
     /// Renames a test (`PATCH /tests/{id}`).
     @discardableResult
-    public func updateTest(testID: String, name: String) async throws -> CreatedTest {
-        let body = UpdateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines))
+    public func updateTest(
+        testID: String,
+        name: String,
+        options: TestWriteOptions = TestWriteOptions()
+    ) async throws -> CreatedTest {
+        let body = UpdateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines), options: options)
         return try await rest.send(
             CreatedTest.self,
             method: "PATCH",

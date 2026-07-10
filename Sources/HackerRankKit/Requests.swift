@@ -171,11 +171,155 @@ public nonisolated struct CreatedUser: Decodable, Sendable {
 /// The body sent when creating a test.
 nonisolated struct CreateTestRequest: Encodable {
     let name: String
+    let options: TestWriteOptions
 }
 
 /// The body sent when renaming a test.
 nonisolated struct UpdateTestRequest: Encodable {
     let name: String
+    let options: TestWriteOptions
+}
+
+extension CreateTestRequest {
+    enum CodingKeys: String, CodingKey {
+        case name
+        case duration
+        case cutoffScore = "cutoff_score"
+        case instructions
+        case startTime = "start_time"
+        case endTime = "end_time"
+        case languages
+        case tags
+        case library
+        case role
+        case skills
+        case type
+        case questions
+        case shuffleQuestions = "shuffle_questions"
+        case enableProctoring = "enable_proctoring"
+    }
+
+    nonisolated func encode(to encoder: any Encoder) throws {
+        try encodeTestWriteBody(to: encoder, name: name, options: options)
+    }
+}
+
+extension UpdateTestRequest {
+    enum CodingKeys: String, CodingKey {
+        case name
+        case duration
+        case cutoffScore = "cutoff_score"
+        case instructions
+        case startTime = "start_time"
+        case endTime = "end_time"
+        case languages
+        case tags
+        case library
+        case role
+        case skills
+        case type
+        case questions
+        case shuffleQuestions = "shuffle_questions"
+        case enableProctoring = "enable_proctoring"
+    }
+
+    nonisolated func encode(to encoder: any Encoder) throws {
+        try encodeTestWriteBody(to: encoder, name: name, options: options)
+    }
+}
+
+private nonisolated func encodeTestWriteBody(to encoder: any Encoder, name: String, options: TestWriteOptions) throws {
+    var container = encoder.container(keyedBy: CreateTestRequest.CodingKeys.self)
+    try container.encode(name, forKey: .name)
+    try container.encodeIfPresent(options.duration, forKey: .duration)
+    try container.encodeIfPresent(options.cutoffScore, forKey: .cutoffScore)
+    try container.encodeIfPresent(options.instructions, forKey: .instructions)
+    try container.encodeIfPresent(options.startTime, forKey: .startTime)
+    try container.encodeIfPresent(options.endTime, forKey: .endTime)
+    try container.encodeIfPresent(options.languages, forKey: .languages)
+    try container.encodeIfPresent(options.tags, forKey: .tags)
+    try container.encodeIfPresent(options.library, forKey: .library)
+    try container.encodeIfPresent(options.role, forKey: .role)
+    try container.encodeIfPresent(options.skills, forKey: .skills)
+    try container.encodeIfPresent(options.type, forKey: .type)
+    try container.encodeIfPresent(options.questions, forKey: .questions)
+    try container.encodeIfPresent(options.shuffleQuestions, forKey: .shuffleQuestions)
+    try container.encodeIfPresent(options.enableProctoring, forKey: .enableProctoring)
+}
+
+/// Optional fields for creating or updating an assessment. Values are omitted when unset,
+/// so the existing name-only create/update calls stay minimal.
+public nonisolated struct TestWriteOptions: Sendable, Equatable {
+    /// Duration of the assessment in minutes.
+    public let duration: Int?
+    /// Passing score threshold.
+    public let cutoffScore: Int?
+    /// Candidate-facing instructions.
+    public let instructions: String?
+    /// ISO-8601 assessment window start.
+    public let startTime: String?
+    /// ISO-8601 assessment window end.
+    public let endTime: String?
+    /// Allowed programming languages.
+    public let languages: [String]?
+    /// Tags to attach to the assessment.
+    public let tags: [String]?
+    /// Source library/collection metadata.
+    public let library: String?
+    /// Hiring role metadata.
+    public let role: String?
+    /// Skills assessed by the test.
+    public let skills: [String]?
+    /// Assessment type/category.
+    public let type: String?
+    /// Question identifiers included in the assessment.
+    public let questions: [String]?
+    /// Whether question order should be shuffled.
+    public let shuffleQuestions: Bool?
+    /// Whether proctoring should be enabled.
+    public let enableProctoring: Bool?
+
+    public init(
+        duration: Int? = nil,
+        cutoffScore: Int? = nil,
+        instructions: String? = nil,
+        startTime: String? = nil,
+        endTime: String? = nil,
+        languages: [String]? = nil,
+        tags: [String]? = nil,
+        library: String? = nil,
+        role: String? = nil,
+        skills: [String]? = nil,
+        type: String? = nil,
+        questions: [String]? = nil,
+        shuffleQuestions: Bool? = nil,
+        enableProctoring: Bool? = nil
+    ) {
+        self.duration = duration
+        self.cutoffScore = cutoffScore
+        self.instructions = Self.nonBlank(instructions)
+        self.startTime = Self.nonBlank(startTime)
+        self.endTime = Self.nonBlank(endTime)
+        self.languages = Self.cleanList(languages)
+        self.tags = Self.cleanList(tags)
+        self.library = Self.nonBlank(library)
+        self.role = Self.nonBlank(role)
+        self.skills = Self.cleanList(skills)
+        self.type = Self.nonBlank(type)
+        self.questions = Self.cleanList(questions)
+        self.shuffleQuestions = shuffleQuestions
+        self.enableProctoring = enableProctoring
+    }
+
+    private static func cleanList(_ values: [String]?) -> [String]? {
+        let cleaned = values?.compactMap(nonBlank)
+        return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
 }
 
 /// The test echoed back by a successful create/update/delete. All-optional so a 2xx

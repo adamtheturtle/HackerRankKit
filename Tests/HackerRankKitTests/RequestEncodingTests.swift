@@ -96,4 +96,78 @@ struct RequestEncodingTests {
         #expect(object["ats_candidate_id"] == nil)
         #expect(object["tags"] as? [String] == ["onsite"])
     }
+
+    @Test
+    func `minimal test create only encodes name`() throws {
+        let request = CreateTestRequest(name: "Backend Screen", options: TestWriteOptions())
+
+        let object = try encodedObject(request)
+        #expect(object["name"] as? String == "Backend Screen")
+        #expect(object["duration"] == nil)
+        #expect(object["cutoff_score"] == nil)
+        #expect(object.count == 1)
+    }
+
+    @Test
+    func `rich test create encodes snake case optional fields`() throws {
+        let request = CreateTestRequest(
+            name: "Backend Screen",
+            options: TestWriteOptions(
+                duration: 90,
+                cutoffScore: 70,
+                instructions: "Solve all questions.",
+                startTime: "2026-07-10T09:00:00Z",
+                endTime: "2026-07-17T09:00:00Z",
+                languages: ["python", "go"],
+                tags: ["backend", "screening"],
+                library: "HackerRank",
+                role: "Backend Engineer",
+                skills: ["APIs", "Data Structures"],
+                type: "Screen",
+                questions: ["q1", "q2"],
+                shuffleQuestions: true,
+                enableProctoring: false
+            )
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["name"] as? String == "Backend Screen")
+        #expect(object["duration"] as? Int == 90)
+        #expect(object["cutoff_score"] as? Int == 70)
+        #expect(object["instructions"] as? String == "Solve all questions.")
+        #expect(object["start_time"] as? String == "2026-07-10T09:00:00Z")
+        #expect(object["end_time"] as? String == "2026-07-17T09:00:00Z")
+        #expect(object["languages"] as? [String] == ["python", "go"])
+        #expect(object["tags"] as? [String] == ["backend", "screening"])
+        #expect(object["library"] as? String == "HackerRank")
+        #expect(object["role"] as? String == "Backend Engineer")
+        #expect(object["skills"] as? [String] == ["APIs", "Data Structures"])
+        #expect(object["type"] as? String == "Screen")
+        #expect(object["questions"] as? [String] == ["q1", "q2"])
+        #expect(object["shuffle_questions"] as? Bool == true)
+        #expect(object["enable_proctoring"] as? Bool == false)
+    }
+
+    @Test
+    func `test write options omit blank strings and empty lists`() throws {
+        let request = UpdateTestRequest(
+            name: "Backend Screen",
+            options: TestWriteOptions(
+                instructions: " ",
+                languages: ["python", ""],
+                tags: [],
+                role: "\n",
+                skills: ["APIs", "  "],
+                questions: ["q1", ""]
+            )
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["instructions"] == nil)
+        #expect(object["role"] == nil)
+        #expect(object["tags"] == nil)
+        #expect(object["languages"] as? [String] == ["python"])
+        #expect(object["skills"] as? [String] == ["APIs"])
+        #expect(object["questions"] as? [String] == ["q1"])
+    }
 }
