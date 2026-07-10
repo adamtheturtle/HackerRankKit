@@ -27,7 +27,7 @@ nonisolated enum MockResponses {
         let path = url.path
         if path.hasSuffix("/search") { return searchBody(for: url, query: query) }
         if path.contains("/audit_log") { return MockFixtures.auditLog }
-        if path.contains("/candidates") { return MockFixtures.candidates }
+        if path.contains("/candidates") { return candidatesBody(path: path) }
         if path.contains("/questions") {
             return path.hasSuffix("/questions") ? MockFixtures.questions : MockFixtures.questionDetail
         }
@@ -58,6 +58,12 @@ nonisolated enum MockResponses {
     private static func testsBody(for url: URL, query: [String: String]) -> String {
         if !url.path.hasSuffix("/tests") { return MockFixtures.testDetail }
         return query["offset"] == "3" ? MockFixtures.testsPage2 : MockFixtures.testsPage1
+    }
+
+    /// The candidates collection is paged, but `/tests/{test_id}/candidates/{candidate_id}`
+    /// returns one candidate object.
+    private static func candidatesBody(path: String) -> String {
+        path.hasSuffix("/candidates") ? MockFixtures.candidates : MockFixtures.candidateDetail
     }
 
     /// Routes a single-interview read to its fixture — the transcript or the detail — or

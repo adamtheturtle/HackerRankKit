@@ -55,6 +55,15 @@ struct MockServerTests {
     }
 
     @Test
+    func `single candidate detail decodes as one object`() async throws {
+        let candidate = try await client.candidate(testID: "t1", candidateID: "c1")
+        #expect(candidate.id == "c1")
+        #expect(candidate.fullName == "Ada Lovelace")
+        #expect(candidate.tags == ["shortlist", "single-read"])
+        #expect(candidate.editorPasteCount == 1)
+    }
+
+    @Test
     func `write flows return their echoed record`() async throws {
         let created = try await client.createTest(name: "New Screen")
         #expect(created.id == "t-created")

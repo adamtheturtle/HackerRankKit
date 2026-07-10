@@ -170,6 +170,15 @@ public struct HackerRankClient {
         )
     }
 
+    /// The richer single-candidate read (`GET /tests/{test_id}/candidates/{candidate_id}`),
+    /// backing detail refreshes that need fields beyond the paged list row.
+    public func candidate(testID: String, candidateID: String) async throws -> TestCandidate {
+        try await rest.fetch(
+            TestCandidate.self,
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))"
+        )
+    }
+
     /// Invites a candidate to a test (`POST /tests/{id}/candidates`). A UI should confirm
     /// the invite before it runs.
     ///

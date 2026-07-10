@@ -111,6 +111,19 @@ public nonisolated enum MockFixtures {
     ],"next":null}
     """#
 
+    /// The richer single-candidate read. It is intentionally one object, not the paged
+    /// `{"data":[...]}` envelope used by `/candidates`.
+    static let candidateDetail = #"""
+    {"id":"c1","email":"ada@example.com","full_name":"Ada Lovelace","score":92.0,
+     "percentage_score":92.0,"integrity_status":"clean","plagiarism_status":false,
+     "status":7,"ats_state":2,
+     "report_url":"https://www.hackerrank.com/x/candidates/c1/report",
+     "pdf_url":"https://www.hackerrank.com/x/candidates/c1/report.pdf",
+     "attempt_starttime":"2026-05-02T10:00:00Z","attempt_endtime":"2026-05-02T11:15:00Z",
+     "tags":["shortlist","single-read"],"feedback":"Excellent problem decomposition.",
+     "out_of_window_events":0,"out_of_window_duration":0.0,"editor_paste_count":1}
+    """#
+
     // MARK: - Questions
 
     static let questions = #"""
