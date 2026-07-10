@@ -82,6 +82,15 @@ public nonisolated enum MockFixtures {
      "master_password":"demo-master-pw","mcq_correct_score":4.0,"mcq_incorrect_score":-1.0}
     """#
 
+    /// Users who can invite candidates to the test.
+    static let testInviters = #"""
+    {"data":[
+      {"id":"u1","email":"rhea@example.com","firstname":"Rhea","lastname":"Recruiter","role":"recruiter"},
+      {"id":"u2","email":"ian@example.com","firstname":"Ian","lastname":"Interviewer","role":"interviewer"},
+      {"id":"u-missing-email","firstname":"Email","lastname":"Optional","role":"recruiter"}
+    ],"next":null}
+    """#
+
     // MARK: - Candidates
 
     static let candidates = #"""

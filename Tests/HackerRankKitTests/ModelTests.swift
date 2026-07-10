@@ -50,6 +50,13 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `test inviter without email still decodes`() throws {
+        let page = try decode(HackerRankPage<TestInviter>.self, #"{"data":[{"id":"u1"}],"next":null}"#)
+        #expect(page.data.count == 1)
+        #expect(page.data.first?.email == "")
+    }
+
+    @Test
     func `interview person decodes bare string and object`() throws {
         let json = #"""
         {"from":"2026-01-01T09:00:00Z",

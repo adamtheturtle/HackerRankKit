@@ -39,6 +39,15 @@ struct MockServerTests {
     }
 
     @Test
+    func `test inviters returns a paged inviter list`() async throws {
+        let page = try await client.testInviters(testID: "t1")
+        #expect(page.items.map(\.id) == ["u1", "u2", "u-missing-email"])
+        #expect(page.items.first?.email == "rhea@example.com")
+        #expect(page.items.last?.email == "")
+        #expect(page.next == nil)
+    }
+
+    @Test
     func `interview detail and transcript decode`() async throws {
         let detail = try await client.interview(id: "i1")
         #expect(detail.candidate?.displayName == "Ada Lovelace")

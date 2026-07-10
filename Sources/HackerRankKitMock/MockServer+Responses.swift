@@ -28,6 +28,7 @@ nonisolated enum MockResponses {
         if path.hasSuffix("/search") { return searchBody(for: url, query: query) }
         if path.contains("/audit_log") { return MockFixtures.auditLog }
         if path.contains("/candidates") { return candidatesBody(path: path) }
+        if path.hasSuffix("/inviters") { return MockFixtures.testInviters }
         if path.contains("/questions") {
             return path.hasSuffix("/questions") ? MockFixtures.questions : MockFixtures.questionDetail
         }

@@ -242,6 +242,16 @@ public struct HackerRankClient {
         try await rest.fetch(TestDetail.self, path: "\(Self.apiV3)/tests/\(Self.pathSegment(id))")
     }
 
+    /// One page of users who can invite candidates to a test
+    /// (`GET /tests/{id}/inviters`), plus the cursor for the next page.
+    public func testInviters(testID: String, after cursor: String? = nil) async throws -> Page<TestInviter> {
+        try await page(
+            HackerRankPage<TestInviter>.self,
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/inviters",
+            cursor: cursor
+        )
+    }
+
     // MARK: Questions
 
     /// One page of the account's questions, plus the cursor for the next page.
