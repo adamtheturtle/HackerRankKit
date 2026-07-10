@@ -81,6 +81,16 @@ struct MockServerTests {
     }
 
     @Test
+    func `question write flows return their echoed record`() async throws {
+        let created = try await client.createQuestion(name: "New Question", type: "code")
+        #expect(created.id == "q-written")
+        let updated = try await client.updateQuestion(questionID: "q1", name: "Renamed Question")
+        #expect(updated.name == "New Question")
+        let deleted = try await client.deleteQuestion(questionID: "q1")
+        #expect(deleted.type == "code")
+    }
+
+    @Test
     func `currentUser returns the demo identity`() async throws {
         let me = try await client.currentUser()
         #expect(me.email == "demo@example.com")

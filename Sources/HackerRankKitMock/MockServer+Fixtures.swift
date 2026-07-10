@@ -24,6 +24,11 @@ public nonisolated enum MockFixtures {
     {"id":"u-created","email":"created@example.com","role":"recruiter","status":"invited"}
     """#
 
+    /// The record returned when a question is created/updated/deleted in the demo.
+    static let writtenQuestion = #"""
+    {"id":"q-written","name":"New Question","type":"code"}
+    """#
+
     /// The record returned when a team is created in the demo.
     static let createdTeam = #"""
     {"id":"tm-created","name":"New Team","owner":"u1"}

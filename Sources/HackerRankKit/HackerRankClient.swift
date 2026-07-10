@@ -271,6 +271,56 @@ public struct HackerRankClient {
         try await rest.fetch(QuestionDetail.self, path: "\(Self.apiV3)/questions/\(Self.pathSegment(id))")
     }
 
+    /// Creates a question (`POST /questions`) using the stable shared metadata fields.
+    /// Type-specific authoring payloads can be added in a later layer.
+    @discardableResult
+    public func createQuestion(
+        name: String,
+        type: String,
+        options: QuestionWriteOptions = QuestionWriteOptions()
+    ) async throws -> WrittenQuestion {
+        let body = CreateQuestionRequest(
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            type: type.trimmingCharacters(in: .whitespacesAndNewlines),
+            options: options
+        )
+        return try await rest.send(WrittenQuestion.self, method: "POST", path: "\(Self.apiV3)/questions", body: body)
+    }
+
+    /// Updates question metadata (`PATCH /questions/{id}`). Pass only the fields that should
+    /// change; unset values are omitted.
+    @discardableResult
+    public func updateQuestion(
+        questionID: String,
+        name: String? = nil,
+        type: String? = nil,
+        options: QuestionWriteOptions = QuestionWriteOptions()
+    ) async throws -> WrittenQuestion {
+        let body = UpdateQuestionRequest(
+            name: Self.nonBlank(name),
+            type: Self.nonBlank(type),
+            options: options
+        )
+        return try await rest.send(
+            WrittenQuestion.self,
+            method: "PATCH",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))",
+            body: body
+        )
+    }
+
+    /// Deletes a question (`DELETE /questions/{id}`). Destructive and irreversible,
+    /// so a UI should confirm before this is called.
+    @discardableResult
+    public func deleteQuestion(questionID: String) async throws -> WrittenQuestion {
+        try await rest.send(
+            WrittenQuestion.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))",
+            body: EmptyBody()
+        )
+    }
+
     // MARK: Interviews
 
     /// One page of the account's interviews, plus the cursor for the next page.

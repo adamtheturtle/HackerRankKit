@@ -48,6 +48,7 @@ nonisolated enum MockResponses {
     private static func writeAckBody(for url: URL) -> String {
         let path = url.path
         if path.contains("/users") { return MockFixtures.createdUser }
+        if path.contains("/questions") { return MockFixtures.writtenQuestion }
         if path.contains("/teams") { return MockFixtures.createdTeam }
         if path.contains("/interviews") { return MockFixtures.createdInterview }
         if path.contains("/candidates") { return MockFixtures.createdCandidate }

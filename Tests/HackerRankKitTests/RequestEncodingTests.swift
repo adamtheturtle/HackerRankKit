@@ -170,4 +170,56 @@ struct RequestEncodingTests {
         #expect(object["skills"] as? [String] == ["APIs"])
         #expect(object["questions"] as? [String] == ["q1"])
     }
+
+    @Test
+    func `question create encodes stable metadata fields`() throws {
+        let request = CreateQuestionRequest(
+            name: "Two Sum",
+            type: "code",
+            options: QuestionWriteOptions(
+                status: "published",
+                languages: ["python", "go"],
+                problemStatement: "Return two indices.",
+                recommendedDuration: 20,
+                tags: ["arrays", "hashing"],
+                maxScore: 100.0,
+                skills: ["Problem Solving"]
+            )
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["name"] as? String == "Two Sum")
+        #expect(object["type"] as? String == "code")
+        #expect(object["status"] as? String == "published")
+        #expect(object["languages"] as? [String] == ["python", "go"])
+        #expect(object["problem_statement"] as? String == "Return two indices.")
+        #expect(object["recommended_duration"] as? Int == 20)
+        #expect(object["tags"] as? [String] == ["arrays", "hashing"])
+        #expect(object["max_score"] as? Double == 100.0)
+        #expect(object["skills"] as? [String] == ["Problem Solving"])
+    }
+
+    @Test
+    func `question update omits unset and blank metadata fields`() throws {
+        let request = UpdateQuestionRequest(
+            name: nil,
+            type: " ",
+            options: QuestionWriteOptions(
+                status: "",
+                languages: ["python", ""],
+                problemStatement: "\n",
+                tags: [],
+                skills: ["Algorithms", " "]
+            )
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["name"] == nil)
+        #expect(object["type"] == nil)
+        #expect(object["status"] == nil)
+        #expect(object["problem_statement"] == nil)
+        #expect(object["tags"] == nil)
+        #expect(object["languages"] as? [String] == ["python"])
+        #expect(object["skills"] as? [String] == ["Algorithms"])
+    }
 }

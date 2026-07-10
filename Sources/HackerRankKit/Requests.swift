@@ -168,6 +168,124 @@ public nonisolated struct CreatedUser: Decodable, Sendable {
     public let email: String?
 }
 
+/// The body sent when creating a question. The stable metadata fields are modelled here;
+/// type-specific authoring payloads can layer on later without changing this first slice.
+nonisolated struct CreateQuestionRequest: Encodable {
+    let name: String
+    let type: String
+    let options: QuestionWriteOptions
+}
+
+/// The body sent when updating question metadata.
+nonisolated struct UpdateQuestionRequest: Encodable {
+    let name: String?
+    let type: String?
+    let options: QuestionWriteOptions
+}
+
+private enum QuestionWriteCodingKeys: String, CodingKey {
+    case name
+    case type
+    case status
+    case languages
+    case problemStatement = "problem_statement"
+    case recommendedDuration = "recommended_duration"
+    case tags
+    case maxScore = "max_score"
+    case skills
+}
+
+extension CreateQuestionRequest {
+    nonisolated func encode(to encoder: any Encoder) throws {
+        try encodeQuestionWriteBody(to: encoder, name: name, type: type, options: options)
+    }
+}
+
+extension UpdateQuestionRequest {
+    nonisolated func encode(to encoder: any Encoder) throws {
+        try encodeQuestionWriteBody(to: encoder, name: name, type: type, options: options)
+    }
+}
+
+private nonisolated func encodeQuestionWriteBody(
+    to encoder: any Encoder,
+    name: String?,
+    type: String?,
+    options: QuestionWriteOptions
+) throws {
+    var container = encoder.container(keyedBy: QuestionWriteCodingKeys.self)
+    try container.encodeIfPresent(nonBlank(name), forKey: .name)
+    try container.encodeIfPresent(nonBlank(type), forKey: .type)
+    try container.encodeIfPresent(options.status, forKey: .status)
+    try container.encodeIfPresent(options.languages, forKey: .languages)
+    try container.encodeIfPresent(options.problemStatement, forKey: .problemStatement)
+    try container.encodeIfPresent(options.recommendedDuration, forKey: .recommendedDuration)
+    try container.encodeIfPresent(options.tags, forKey: .tags)
+    try container.encodeIfPresent(options.maxScore, forKey: .maxScore)
+    try container.encodeIfPresent(options.skills, forKey: .skills)
+}
+
+private nonisolated func nonBlank(_ value: String?) -> String? {
+    let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+    return result?.isEmpty == false ? result : nil
+}
+
+/// Optional stable metadata fields for creating or updating questions. The full question
+/// authoring surface is type-specific, so this first slice intentionally sticks to fields
+/// shared by the list/detail models.
+public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
+    /// Question lifecycle status.
+    public let status: String?
+    /// Allowed programming languages for coding questions.
+    public let languages: [String]?
+    /// Problem statement, typically Markdown or HTML.
+    public let problemStatement: String?
+    /// Recommended solving duration in minutes.
+    public let recommendedDuration: Int?
+    /// Tags to attach to the question.
+    public let tags: [String]?
+    /// Maximum achievable score.
+    public let maxScore: Double?
+    /// Skills assessed by the question.
+    public let skills: [String]?
+
+    public init(
+        status: String? = nil,
+        languages: [String]? = nil,
+        problemStatement: String? = nil,
+        recommendedDuration: Int? = nil,
+        tags: [String]? = nil,
+        maxScore: Double? = nil,
+        skills: [String]? = nil
+    ) {
+        self.status = Self.nonBlank(status)
+        self.languages = Self.cleanList(languages)
+        self.problemStatement = Self.nonBlank(problemStatement)
+        self.recommendedDuration = recommendedDuration
+        self.tags = Self.cleanList(tags)
+        self.maxScore = maxScore
+        self.skills = Self.cleanList(skills)
+    }
+
+    private static func cleanList(_ values: [String]?) -> [String]? {
+        let cleaned = values?.compactMap(nonBlank)
+        return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
+}
+
+/// The question echoed back by a successful create/update/delete. All-optional so a 2xx
+/// never fails to decode on an unexpected shape.
+public nonisolated struct WrittenQuestion: Decodable, Sendable {
+    public let id: String?
+    public let name: String?
+    public let type: String?
+}
+
 /// The body sent when creating a test.
 nonisolated struct CreateTestRequest: Encodable {
     let name: String
