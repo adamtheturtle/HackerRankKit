@@ -189,13 +189,15 @@ public struct HackerRankClient {
         testID: String,
         email: String,
         fullName: String? = nil,
-        sendEmail: Bool = true
+        sendEmail: Bool = true,
+        options: CandidateInviteOptions = CandidateInviteOptions()
     ) async throws -> InvitedCandidate {
         let trimmedName = fullName?.trimmingCharacters(in: .whitespacesAndNewlines)
         let body = InviteCandidateRequest(
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             fullName: (trimmedName?.isEmpty == false) ? trimmedName : nil,
-            sendEmail: sendEmail
+            sendEmail: sendEmail,
+            options: options
         )
         return try await rest.send(
             InvitedCandidate.self,

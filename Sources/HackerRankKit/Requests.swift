@@ -16,11 +16,124 @@ nonisolated struct InviteCandidateRequest: Encodable {
     let email: String
     let fullName: String?
     let sendEmail: Bool
+    let options: CandidateInviteOptions
 
     enum CodingKeys: String, CodingKey {
         case email
         case fullName = "full_name"
         case sendEmail = "send_email"
+        case validFrom = "valid_from"
+        case validUntil = "valid_until"
+        case emailSubject = "email_subject"
+        case emailMessage = "email_message"
+        case templateID = "template_id"
+        case evaluatorEmail = "evaluator_email"
+        case finishURL = "finish_url"
+        case resultURL = "result_url"
+        case notifyResultUpdate = "notify_result_update"
+        case tags
+        case force
+        case allowReattempt = "allow_reattempt"
+        case additionalTime = "additional_time"
+        case atsCandidateID = "ats_candidate_id"
+        case atsRequisitionID = "ats_requisition_id"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(email, forKey: .email)
+        try container.encodeIfPresent(fullName, forKey: .fullName)
+        try container.encode(sendEmail, forKey: .sendEmail)
+        try container.encodeIfPresent(options.validFrom, forKey: .validFrom)
+        try container.encodeIfPresent(options.validUntil, forKey: .validUntil)
+        try container.encodeIfPresent(options.emailSubject, forKey: .emailSubject)
+        try container.encodeIfPresent(options.emailMessage, forKey: .emailMessage)
+        try container.encodeIfPresent(options.templateID, forKey: .templateID)
+        try container.encodeIfPresent(options.evaluatorEmail, forKey: .evaluatorEmail)
+        try container.encodeIfPresent(options.finishURL, forKey: .finishURL)
+        try container.encodeIfPresent(options.resultURL, forKey: .resultURL)
+        try container.encodeIfPresent(options.notifyResultUpdate, forKey: .notifyResultUpdate)
+        try container.encodeIfPresent(options.tags, forKey: .tags)
+        try container.encodeIfPresent(options.force, forKey: .force)
+        try container.encodeIfPresent(options.allowReattempt, forKey: .allowReattempt)
+        try container.encodeIfPresent(options.additionalTime, forKey: .additionalTime)
+        try container.encodeIfPresent(options.atsCandidateID, forKey: .atsCandidateID)
+        try container.encodeIfPresent(options.atsRequisitionID, forKey: .atsRequisitionID)
+    }
+}
+
+/// Optional fields for a candidate invite. Values are omitted from the request when unset,
+/// so callers can opt into richer API support without changing the minimal invite path.
+public nonisolated struct CandidateInviteOptions: Sendable, Equatable {
+    /// ISO-8601 time before which the invite should not be usable.
+    public let validFrom: String?
+    /// ISO-8601 time after which the invite should expire.
+    public let validUntil: String?
+    /// Custom invitation email subject.
+    public let emailSubject: String?
+    /// Custom invitation email body/message.
+    public let emailMessage: String?
+    /// Invitation email template identifier.
+    public let templateID: String?
+    /// Evaluator email address assigned to the invite.
+    public let evaluatorEmail: String?
+    /// URL the candidate is sent to after finishing.
+    public let finishURL: String?
+    /// URL for downstream result/report callbacks or redirects.
+    public let resultURL: String?
+    /// Whether to notify downstream systems when results update.
+    public let notifyResultUpdate: Bool?
+    /// Tags to attach to the candidate invite.
+    public let tags: [String]?
+    /// Whether to force creation when the API supports it.
+    public let force: Bool?
+    /// Whether the candidate is allowed to reattempt.
+    public let allowReattempt: Bool?
+    /// Additional time accommodation, in minutes.
+    public let additionalTime: Int?
+    /// External ATS candidate identifier.
+    public let atsCandidateID: String?
+    /// External ATS requisition/job identifier.
+    public let atsRequisitionID: String?
+
+    public init(
+        validFrom: String? = nil,
+        validUntil: String? = nil,
+        emailSubject: String? = nil,
+        emailMessage: String? = nil,
+        templateID: String? = nil,
+        evaluatorEmail: String? = nil,
+        finishURL: String? = nil,
+        resultURL: String? = nil,
+        notifyResultUpdate: Bool? = nil,
+        tags: [String]? = nil,
+        force: Bool? = nil,
+        allowReattempt: Bool? = nil,
+        additionalTime: Int? = nil,
+        atsCandidateID: String? = nil,
+        atsRequisitionID: String? = nil
+    ) {
+        self.validFrom = Self.nonBlank(validFrom)
+        self.validUntil = Self.nonBlank(validUntil)
+        self.emailSubject = Self.nonBlank(emailSubject)
+        self.emailMessage = Self.nonBlank(emailMessage)
+        self.templateID = Self.nonBlank(templateID)
+        self.evaluatorEmail = Self.nonBlank(evaluatorEmail)
+        self.finishURL = Self.nonBlank(finishURL)
+        self.resultURL = Self.nonBlank(resultURL)
+        self.notifyResultUpdate = notifyResultUpdate
+        let cleanedTags = tags?.compactMap(Self.nonBlank)
+        self.tags = cleanedTags?.isEmpty == false ? cleanedTags : nil
+        self.force = force
+        self.allowReattempt = allowReattempt
+        self.additionalTime = additionalTime
+        self.atsCandidateID = Self.nonBlank(atsCandidateID)
+        self.atsRequisitionID = Self.nonBlank(atsRequisitionID)
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
     }
 }
 
