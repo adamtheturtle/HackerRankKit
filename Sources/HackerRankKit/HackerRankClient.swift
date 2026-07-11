@@ -527,8 +527,8 @@ public struct HackerRankClient {
     /// `limit`, plus any endpoint-specific `query`) when starting.
     nonisolated func pageURL(path: String, cursor: String?, query: [URLQueryItem] = []) throws -> URL {
         if let cursor {
-            guard let url = URL(string: cursor) else {
-                throw HackerRankError.http(0, "Invalid next-page URL.")
+            guard let url = cursorURL(cursor) else {
+                throw HackerRankError.http(0, "Invalid next-page URL: \(cursor)")
             }
 
             return url
@@ -541,6 +541,18 @@ public struct HackerRankClient {
         }
 
         return url
+    }
+
+    /// Parses a server-provided pagination link. The strict parser rejects links the
+    /// server can hand back in practice (e.g. an unencoded space where a search link
+    /// echoes the query), and some deployments return links relative to the API host;
+    /// tolerate both rather than failing the page.
+    nonisolated func cursorURL(_ cursor: String) -> URL? {
+        let trimmed = cursor.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed, encodingInvalidCharacters: true) else { return nil }
+        guard url.scheme == nil else { return url }
+
+        return URL(string: url.relativeString, relativeTo: baseURL)?.absoluteURL
     }
 
     /// Trims `value` and returns `nil` for an empty/whitespace-only result, so blank

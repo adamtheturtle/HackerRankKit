@@ -24,8 +24,8 @@ extension HackerRankClient {
     /// plus an optional `user_id` filter) when starting.
     private func auditLogURL(cursor: String?, userID: String?) throws -> URL {
         if let cursor {
-            guard let url = URL(string: cursor) else {
-                throw HackerRankError.http(0, "Invalid next-page URL.")
+            guard let url = cursorURL(cursor) else {
+                throw HackerRankError.http(0, "Invalid next-page URL: \(cursor)")
             }
 
             return url
