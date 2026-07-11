@@ -146,18 +146,26 @@ public nonisolated struct InvitedCandidate: Decodable, Sendable {
 }
 
 /// The body sent when creating a user. Snake-case to match the API; blank optional
-/// fields are omitted.
+/// fields are omitted. The server requires `teams` (an array of team-id objects) along
+/// with `email`, `firstname`, and `role`; it rejects a create without them.
 nonisolated struct CreateUserRequest: Encodable {
     let email: String
     let firstName: String?
     let lastName: String?
     let role: String?
+    let teams: [TeamRef]?
+
+    /// The API's team reference shape on a user create: an object holding the team's id.
+    struct TeamRef: Encodable {
+        let id: String
+    }
 
     enum CodingKeys: String, CodingKey {
         case email
         case firstName = "firstname"
         case lastName = "lastname"
         case role
+        case teams
     }
 }
 

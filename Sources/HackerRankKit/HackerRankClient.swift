@@ -407,18 +407,25 @@ public struct HackerRankClient {
     }
 
     /// Creates an organisation user (`POST /users`).
+    ///
+    /// The server requires `email`, `firstName`, `role`, and at least one team id — it
+    /// rejects the request with HTTP 400 ("Parameter teams is required") otherwise. The
+    /// parameters stay optional here so the server remains the source of truth for
+    /// validation; an empty `teamIDs` is omitted from the body.
     @discardableResult
     public func createUser(
         email: String,
         firstName: String? = nil,
         lastName: String? = nil,
-        role: String? = nil
+        role: String? = nil,
+        teamIDs: [String] = []
     ) async throws -> CreatedUser {
         let body = CreateUserRequest(
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             firstName: Self.nonBlank(firstName),
             lastName: Self.nonBlank(lastName),
-            role: Self.nonBlank(role)
+            role: Self.nonBlank(role),
+            teams: teamIDs.isEmpty ? nil : teamIDs.map(CreateUserRequest.TeamRef.init)
         )
         return try await rest.send(CreatedUser.self, method: "POST", path: "\(Self.apiV3)/users", body: body)
     }

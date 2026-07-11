@@ -91,6 +91,14 @@ struct MockServerTests {
     }
 
     @Test
+    func `createUser with team ids returns the echoed record`() async throws {
+        let created = try await client.createUser(
+            email: "new@example.com", firstName: "New", role: "recruiter", teamIDs: ["tm1"]
+        )
+        #expect(created.id == "u-created")
+    }
+
+    @Test
     func `currentUser returns the demo identity`() async throws {
         let me = try await client.currentUser()
         #expect(me.email == "demo@example.com")
