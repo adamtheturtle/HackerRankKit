@@ -386,58 +386,58 @@ public struct HackerRankClient {
 
     /// Updates a coding question's custom code stubs (`PUT /questions/{id}/custom_codestubs`).
     @discardableResult
-    public func updateCustomCodeStubs<Body: Encodable>(
+    public func updateCustomCodeStubs(
         questionID: String,
-        body: Body
+        stubs: [QuestionCodeStub]
     ) async throws -> QuestionOperationResult {
         try await rest.send(
             QuestionOperationResult.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/custom_codestubs",
-            body: body
+            body: CustomCodeStubsRequest(stubs: stubs)
         )
     }
 
     /// Generates code stubs for a coding question (`PUT /questions/{id}/generate`).
     @discardableResult
-    public func generateCodeStubs<Body: Encodable>(
+    public func generateCodeStubs(
         questionID: String,
-        body: Body
+        options: CodeStubGenerationOptions = CodeStubGenerationOptions()
     ) async throws -> QuestionOperationResult {
         try await rest.send(
             QuestionOperationResult.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/generate",
-            body: body
+            body: GenerateCodeStubsRequest(options: options)
         )
     }
 
     /// Adds a testcase to a question (`POST /questions/{id}/testcases`).
     @discardableResult
-    public func addTestcase<Body: Encodable>(
+    public func addTestcase(
         questionID: String,
-        body: Body
+        options: QuestionTestcaseOptions
     ) async throws -> QuestionOperationResult {
         try await rest.send(
             QuestionOperationResult.self,
             method: "POST",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases",
-            body: body
+            body: QuestionTestcaseRequest(options: options)
         )
     }
 
     /// Updates a testcase (`PUT /questions/{id}/testcases/{testcase_id}`).
     @discardableResult
-    public func updateTestcase<Body: Encodable>(
+    public func updateTestcase(
         questionID: String,
         testcaseID: String,
-        body: Body
+        options: QuestionTestcaseOptions
     ) async throws -> QuestionOperationResult {
         try await rest.send(
             QuestionOperationResult.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases/\(Self.pathSegment(testcaseID))",
-            body: body
+            body: QuestionTestcaseRequest(options: options)
         )
     }
 
@@ -534,12 +534,15 @@ public struct HackerRankClient {
 
     /// Updates an interview (`PUT /interviews/{id}`).
     @discardableResult
-    public func updateInterview<Body: Encodable>(id: String, body: Body) async throws -> CreatedInterview {
+    public func updateInterview(
+        id: String,
+        options: InterviewUpdateOptions = InterviewUpdateOptions()
+    ) async throws -> CreatedInterview {
         try await rest.send(
             CreatedInterview.self,
             method: "PUT",
             path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))",
-            body: body
+            body: UpdateInterviewRequest(options: options)
         )
     }
 
@@ -577,18 +580,28 @@ public struct HackerRankClient {
 
     /// Creates an interview template (`POST /interview_templates`).
     @discardableResult
-    public func createInterviewTemplate<Body: Encodable>(body: Body) async throws -> InterviewTemplate {
-        try await rest.send(InterviewTemplate.self, method: "POST", path: "\(Self.apiV3)/interview_templates", body: body)
+    public func createInterviewTemplate(
+        options: InterviewTemplateWriteOptions
+    ) async throws -> InterviewTemplate {
+        try await rest.send(
+            InterviewTemplate.self,
+            method: "POST",
+            path: "\(Self.apiV3)/interview_templates",
+            body: InterviewTemplateWriteRequest(options: options)
+        )
     }
 
     /// Updates an interview template (`PUT /interview_templates/{template_id}`).
     @discardableResult
-    public func updateInterviewTemplate<Body: Encodable>(id: Int, body: Body) async throws -> InterviewTemplate {
+    public func updateInterviewTemplate(
+        id: Int,
+        options: InterviewTemplateWriteOptions = InterviewTemplateWriteOptions()
+    ) async throws -> InterviewTemplate {
         try await rest.send(
             InterviewTemplate.self,
             method: "PUT",
             path: "\(Self.apiV3)/interview_templates/\(id)",
-            body: body
+            body: InterviewTemplateWriteRequest(options: options)
         )
     }
 
@@ -673,19 +686,19 @@ public struct HackerRankClient {
 
     /// Creates a user through the legacy SCIM provisioning endpoint (`POST /Users`).
     @discardableResult
-    public func createSCIMUser<Body: Encodable>(body: Body) async throws -> SCIMUser {
+    public func createSCIMUser(body: SCIMUserWriteRequest) async throws -> SCIMUser {
         try await rest.send(SCIMUser.self, method: "POST", path: "/Users", body: body)
     }
 
     /// Replaces a user through the legacy SCIM provisioning endpoint (`PUT /Users/{id}`).
     @discardableResult
-    public func updateSCIMUser<Body: Encodable>(id: String, body: Body) async throws -> SCIMUser {
+    public func updateSCIMUser(id: String, body: SCIMUserWriteRequest) async throws -> SCIMUser {
         try await rest.send(SCIMUser.self, method: "PUT", path: "/Users/\(Self.pathSegment(id))", body: body)
     }
 
     /// Patches a user through the legacy SCIM provisioning endpoint (`PATCH /Users/{id}`).
     @discardableResult
-    public func patchSCIMUser<Body: Encodable>(id: String, body: Body) async throws -> SCIMUser {
+    public func patchSCIMUser(id: String, body: SCIMPatchRequest) async throws -> SCIMUser {
         try await rest.send(SCIMUser.self, method: "PATCH", path: "/Users/\(Self.pathSegment(id))", body: body)
     }
 
@@ -707,13 +720,13 @@ public struct HackerRankClient {
 
     /// Creates a group through the legacy SCIM provisioning endpoint (`POST /Groups`).
     @discardableResult
-    public func createSCIMGroup<Body: Encodable>(body: Body) async throws -> SCIMGroup {
+    public func createSCIMGroup(body: SCIMGroupWriteRequest) async throws -> SCIMGroup {
         try await rest.send(SCIMGroup.self, method: "POST", path: "/Groups", body: body)
     }
 
     /// Patches a group through the legacy SCIM provisioning endpoint (`PATCH /Groups/{id}`).
     @discardableResult
-    public func patchSCIMGroup<Body: Encodable>(id: String, body: Body) async throws -> SCIMGroup {
+    public func patchSCIMGroup(id: String, body: SCIMPatchRequest) async throws -> SCIMGroup {
         try await rest.send(SCIMGroup.self, method: "PATCH", path: "/Groups/\(Self.pathSegment(id))", body: body)
     }
 

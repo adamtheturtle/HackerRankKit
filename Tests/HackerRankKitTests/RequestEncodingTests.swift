@@ -314,4 +314,114 @@ struct RequestEncodingTests {
         #expect(codeScreen["force"] as? Bool == true)
         #expect(codeScreen["force_reattempt_after"] as? Int == 3600)
     }
+
+    @Test
+    func `scim requests encode provisioning bodies`() throws {
+        let user = try encodedObject(SCIMUserWriteRequest(
+            userName: "rhea@example.com",
+            active: true,
+            role: "recruiter",
+            teamAdmin: true,
+            companyAdmin: false,
+            name: ["givenName": .string("Rhea")],
+            emails: [.object(["value": .string("rhea@example.com")])],
+            schemas: ["urn:ietf:params:scim:schemas:core:2.0:User", ""]
+        ))
+        #expect(user["userName"] as? String == "rhea@example.com")
+        #expect(user["active"] as? Bool == true)
+        #expect(user["role"] as? String == "recruiter")
+        #expect(user["team_admin"] as? Bool == true)
+        #expect(user["company_admin"] as? Bool == false)
+        #expect((user["name"] as? [String: Any])?["givenName"] as? String == "Rhea")
+        #expect(user["schemas"] as? [String] == ["urn:ietf:params:scim:schemas:core:2.0:User"])
+
+        let group = try encodedObject(SCIMGroupWriteRequest(
+            displayName: "Backend Hiring",
+            members: [.object(["value": .string("scim-u1")])]
+        ))
+        #expect(group["displayName"] as? String == "Backend Hiring")
+        #expect((group["members"] as? [[String: Any]])?.first?["value"] as? String == "scim-u1")
+
+        let patch = try encodedObject(SCIMPatchRequest(operations: [
+            SCIMPatchOperation(op: "replace", path: "active", value: .bool(false))
+        ]))
+        #expect(patch["schemas"] as? [String] == ["urn:ietf:params:scim:api:messages:2.0:PatchOp"])
+        let operations = try #require(patch["Operations"] as? [[String: Any]])
+        #expect(operations.first?["op"] as? String == "replace")
+        #expect(operations.first?["path"] as? String == "active")
+        #expect(operations.first?["value"] as? Bool == false)
+    }
+
+    @Test
+    func `question operation requests encode first class bodies`() throws {
+        let stubs = try encodedObject(CustomCodeStubsRequest(stubs: [
+            QuestionCodeStub(language: "swift", code: "func solve() {}")
+        ]))
+        let customCodeStubs = try #require(stubs["custom_codestubs"] as? [[String: Any]])
+        #expect(customCodeStubs.first?["language"] as? String == "swift")
+        #expect(customCodeStubs.first?["code"] as? String == "func solve() {}")
+
+        let generation = try encodedObject(GenerateCodeStubsRequest(options: CodeStubGenerationOptions(
+            functionName: "twoSum",
+            returnType: "[Int]",
+            parameters: [CodeStubParameter(name: "nums", type: "[Int]")],
+            languages: ["swift", ""]
+        )))
+        #expect(generation["function_name"] as? String == "twoSum")
+        #expect(generation["return_type"] as? String == "[Int]")
+        #expect(generation["languages"] as? [String] == ["swift"])
+        #expect((generation["parameters"] as? [[String: Any]])?.first?["name"] as? String == "nums")
+
+        let testcase = try encodedObject(QuestionTestcaseRequest(options: QuestionTestcaseOptions(
+            explanation: "",
+            input: "input",
+            output: "output",
+            name: "Sample",
+            qid: 1,
+            sample: false,
+            score: 10,
+            type: "easy"
+        )))
+        #expect(testcase["explanation"] as? String == "")
+        #expect(testcase["input"] as? String == "input")
+        #expect(testcase["output"] as? String == "output")
+        #expect(testcase["name"] as? String == "Sample")
+        #expect(testcase["qid"] as? Int == 1)
+        #expect(testcase["sample"] as? Bool == false)
+        #expect(testcase["score"] as? Int == 10)
+        #expect(testcase["type"] as? String == "easy")
+    }
+
+    @Test
+    func `interview write requests encode typed optional fields`() throws {
+        let interview = try encodedObject(UpdateInterviewRequest(options: InterviewUpdateOptions(
+            title: "Backend Pairing",
+            from: "2026-07-10T09:00:00Z",
+            to: "2026-07-10T10:00:00Z",
+            candidate: "ada@example.com",
+            interviewers: ["ian@example.com", ""],
+            notes: "Discuss APIs"
+        )))
+        #expect(interview["title"] as? String == "Backend Pairing")
+        #expect(interview["from"] as? String == "2026-07-10T09:00:00Z")
+        #expect(interview["to"] as? String == "2026-07-10T10:00:00Z")
+        #expect(interview["candidate"] as? String == "ada@example.com")
+        #expect(interview["interviewers"] as? [String] == ["ian@example.com"])
+        #expect(interview["notes"] as? String == "Discuss APIs")
+
+        let template = try encodedObject(InterviewTemplateWriteRequest(options: InterviewTemplateWriteOptions(
+            name: "Backend Template",
+            title: "Backend Pairing",
+            description: "Live interview",
+            questions: ["q1", ""],
+            tags: ["backend"],
+            metadata: ["source": .string("api")]
+        )))
+        #expect(template["name"] as? String == "Backend Template")
+        #expect(template["title"] as? String == "Backend Pairing")
+        #expect(template["description"] as? String == "Live interview")
+        #expect(template["questions"] as? [String] == ["q1"])
+        #expect(template["tags"] as? [String] == ["backend"])
+        #expect((template["metadata"] as? [String: Any])?["source"] as? String == "api")
+    }
 }

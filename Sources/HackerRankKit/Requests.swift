@@ -120,6 +120,119 @@ public nonisolated struct SCIMGroup: Decodable, Identifiable, Sendable {
     }
 }
 
+/// The body sent when creating or replacing a legacy SCIM user.
+public nonisolated struct SCIMUserWriteRequest: Encodable, Sendable, Equatable {
+    public let userName: String?
+    public let active: Bool?
+    public let role: String?
+    public let teamAdmin: Bool?
+    public let companyAdmin: Bool?
+    public let name: [String: HackerRankJSONValue]?
+    public let emails: [HackerRankJSONValue]?
+    public let schemas: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case userName
+        case active
+        case role
+        case teamAdmin = "team_admin"
+        case companyAdmin = "company_admin"
+        case name
+        case emails
+        case schemas
+    }
+
+    public init(
+        userName: String? = nil,
+        active: Bool? = nil,
+        role: String? = nil,
+        teamAdmin: Bool? = nil,
+        companyAdmin: Bool? = nil,
+        name: [String: HackerRankJSONValue]? = nil,
+        emails: [HackerRankJSONValue]? = nil,
+        schemas: [String]? = nil
+    ) {
+        self.userName = Self.nonBlank(userName)
+        self.active = active
+        self.role = Self.nonBlank(role)
+        self.teamAdmin = teamAdmin
+        self.companyAdmin = companyAdmin
+        self.name = name?.isEmpty == false ? name : nil
+        self.emails = emails?.isEmpty == false ? emails : nil
+        self.schemas = Self.cleanList(schemas)
+    }
+
+    private static func cleanList(_ values: [String]?) -> [String]? {
+        let cleaned = values?.compactMap(nonBlank)
+        return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
+}
+
+/// The body sent when creating or replacing a legacy SCIM group.
+public nonisolated struct SCIMGroupWriteRequest: Encodable, Sendable, Equatable {
+    public let displayName: String?
+    public let members: [HackerRankJSONValue]?
+    public let schemas: [String]?
+
+    public init(
+        displayName: String? = nil,
+        members: [HackerRankJSONValue]? = nil,
+        schemas: [String]? = nil
+    ) {
+        self.displayName = Self.nonBlank(displayName)
+        self.members = members?.isEmpty == false ? members : nil
+        self.schemas = Self.cleanList(schemas)
+    }
+
+    private static func cleanList(_ values: [String]?) -> [String]? {
+        let cleaned = values?.compactMap(nonBlank)
+        return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
+}
+
+/// The body sent for legacy SCIM PATCH operations.
+public nonisolated struct SCIMPatchRequest: Encodable, Sendable, Equatable {
+    public let schemas: [String]?
+    public let operations: [SCIMPatchOperation]
+
+    enum CodingKeys: String, CodingKey {
+        case schemas
+        case operations = "Operations"
+    }
+
+    public init(
+        operations: [SCIMPatchOperation],
+        schemas: [String]? = ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]
+    ) {
+        self.operations = operations
+        self.schemas = schemas?.isEmpty == false ? schemas : nil
+    }
+}
+
+/// One operation in a legacy SCIM PATCH request.
+public nonisolated struct SCIMPatchOperation: Encodable, Sendable, Equatable {
+    public let op: String
+    public let path: String?
+    public let value: HackerRankJSONValue?
+
+    public init(op: String, path: String? = nil, value: HackerRankJSONValue? = nil) {
+        self.op = op.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPath = path?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.path = trimmedPath?.isEmpty == false ? trimmedPath : nil
+        self.value = value
+    }
+}
+
 /// The body sent when inviting a candidate to a test. Encoded as the API's
 /// snake-case JSON; a blank name is omitted entirely rather than sent empty.
 nonisolated struct InviteCandidateRequest: Encodable {
@@ -622,6 +735,154 @@ public nonisolated struct QuestionOperationResult: Decodable, Sendable {
     public let message: String?
 }
 
+/// The body sent when updating custom code stubs for a coding question.
+nonisolated struct CustomCodeStubsRequest: Encodable {
+    let stubs: [QuestionCodeStub]
+
+    enum CodingKeys: String, CodingKey {
+        case stubs = "custom_codestubs"
+    }
+}
+
+/// One language-specific custom code stub for a coding question.
+public nonisolated struct QuestionCodeStub: Sendable, Equatable, Encodable {
+    public let language: String
+    public let code: String
+
+    public init(language: String, code: String) {
+        self.language = language.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.code = code
+    }
+}
+
+/// The body sent when asking HackerRank to generate code stubs for a coding question.
+nonisolated struct GenerateCodeStubsRequest: Encodable {
+    let options: CodeStubGenerationOptions
+
+    enum CodingKeys: String, CodingKey {
+        case functionName = "function_name"
+        case returnType = "return_type"
+        case parameters
+        case languages
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(options.functionName, forKey: .functionName)
+        try container.encodeIfPresent(options.returnType, forKey: .returnType)
+        try container.encodeIfPresent(options.parameters, forKey: .parameters)
+        try container.encodeIfPresent(options.languages, forKey: .languages)
+    }
+}
+
+/// Optional fields for code-stub generation. The API uses function-signature metadata
+/// and an optional language list; unset values are omitted.
+public nonisolated struct CodeStubGenerationOptions: Sendable, Equatable {
+    public let functionName: String?
+    public let returnType: String?
+    public let parameters: [CodeStubParameter]?
+    public let languages: [String]?
+
+    public init(
+        functionName: String? = nil,
+        returnType: String? = nil,
+        parameters: [CodeStubParameter]? = nil,
+        languages: [String]? = nil
+    ) {
+        self.functionName = Self.nonBlank(functionName)
+        self.returnType = Self.nonBlank(returnType)
+        self.parameters = parameters?.isEmpty == false ? parameters : nil
+        self.languages = Self.cleanList(languages)
+    }
+
+    private static func cleanList(_ values: [String]?) -> [String]? {
+        let cleaned = values?.compactMap(nonBlank)
+        return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
+}
+
+/// One parameter in a generated function signature.
+public nonisolated struct CodeStubParameter: Sendable, Equatable, Encodable {
+    public let name: String
+    public let type: String
+
+    public init(name: String, type: String) {
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.type = type.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+/// The body sent when adding or updating a question testcase.
+nonisolated struct QuestionTestcaseRequest: Encodable {
+    let options: QuestionTestcaseOptions
+
+    enum CodingKeys: String, CodingKey {
+        case explanation
+        case input
+        case output
+        case name
+        case qid
+        case sample
+        case score
+        case type
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(options.explanation, forKey: .explanation)
+        try container.encodeIfPresent(options.input, forKey: .input)
+        try container.encodeIfPresent(options.output, forKey: .output)
+        try container.encodeIfPresent(options.name, forKey: .name)
+        try container.encodeIfPresent(options.qid, forKey: .qid)
+        try container.encodeIfPresent(options.sample, forKey: .sample)
+        try container.encodeIfPresent(options.score, forKey: .score)
+        try container.encodeIfPresent(options.type, forKey: .type)
+    }
+}
+
+/// Optional fields for a coding-question testcase. These match the public API sample;
+/// unset string values are omitted, but an intentionally empty explanation is preserved.
+public nonisolated struct QuestionTestcaseOptions: Sendable, Equatable {
+    public let explanation: String?
+    public let input: String?
+    public let output: String?
+    public let name: String?
+    public let qid: Int?
+    public let sample: Bool?
+    public let score: Int?
+    public let type: String?
+
+    public init(
+        explanation: String? = nil,
+        input: String? = nil,
+        output: String? = nil,
+        name: String? = nil,
+        qid: Int? = nil,
+        sample: Bool? = nil,
+        score: Int? = nil,
+        type: String? = nil
+    ) {
+        self.explanation = explanation
+        self.input = Self.nonBlank(input)
+        self.output = Self.nonBlank(output)
+        self.name = Self.nonBlank(name)
+        self.qid = qid
+        self.sample = sample
+        self.score = score
+        self.type = Self.nonBlank(type)
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
+}
+
 /// The body sent when creating a test.
 nonisolated struct CreateTestRequest: Encodable {
     let name: String
@@ -910,6 +1171,126 @@ nonisolated struct ScheduleInterviewRequest: Encodable {
     let from: String
     let candidate: String?
     let notes: String?
+}
+
+/// The body sent when updating an interview.
+nonisolated struct UpdateInterviewRequest: Encodable {
+    let options: InterviewUpdateOptions
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case from
+        case to
+        case candidate
+        case interviewers
+        case notes
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(options.title, forKey: .title)
+        try container.encodeIfPresent(options.from, forKey: .from)
+        try container.encodeIfPresent(options.to, forKey: .to)
+        try container.encodeIfPresent(options.candidate, forKey: .candidate)
+        try container.encodeIfPresent(options.interviewers, forKey: .interviewers)
+        try container.encodeIfPresent(options.notes, forKey: .notes)
+    }
+}
+
+/// Optional fields for updating an interview.
+public nonisolated struct InterviewUpdateOptions: Sendable, Equatable {
+    public let title: String?
+    public let from: String?
+    public let to: String?
+    public let candidate: String?
+    public let interviewers: [String]?
+    public let notes: String?
+
+    public init(
+        title: String? = nil,
+        from: String? = nil,
+        to: String? = nil,
+        candidate: String? = nil,
+        interviewers: [String]? = nil,
+        notes: String? = nil
+    ) {
+        self.title = Self.nonBlank(title)
+        self.from = Self.nonBlank(from)
+        self.to = Self.nonBlank(to)
+        self.candidate = Self.nonBlank(candidate)
+        self.interviewers = Self.cleanList(interviewers)
+        self.notes = Self.nonBlank(notes)
+    }
+
+    private static func cleanList(_ values: [String]?) -> [String]? {
+        let cleaned = values?.compactMap(nonBlank)
+        return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
+}
+
+/// The body sent when creating or updating an interview template.
+nonisolated struct InterviewTemplateWriteRequest: Encodable {
+    let options: InterviewTemplateWriteOptions
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case title
+        case description
+        case questions
+        case tags
+        case metadata
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(options.name, forKey: .name)
+        try container.encodeIfPresent(options.title, forKey: .title)
+        try container.encodeIfPresent(options.description, forKey: .description)
+        try container.encodeIfPresent(options.questions, forKey: .questions)
+        try container.encodeIfPresent(options.tags, forKey: .tags)
+        try container.encodeIfPresent(options.metadata, forKey: .metadata)
+    }
+}
+
+/// Optional fields for interview-template writes.
+public nonisolated struct InterviewTemplateWriteOptions: Sendable, Equatable {
+    public let name: String?
+    public let title: String?
+    public let description: String?
+    public let questions: [String]?
+    public let tags: [String]?
+    public let metadata: [String: HackerRankJSONValue]?
+
+    public init(
+        name: String? = nil,
+        title: String? = nil,
+        description: String? = nil,
+        questions: [String]? = nil,
+        tags: [String]? = nil,
+        metadata: [String: HackerRankJSONValue]? = nil
+    ) {
+        self.name = Self.nonBlank(name)
+        self.title = Self.nonBlank(title)
+        self.description = Self.nonBlank(description)
+        self.questions = Self.cleanList(questions)
+        self.tags = Self.cleanList(tags)
+        self.metadata = metadata?.isEmpty == false ? metadata : nil
+    }
+
+    private static func cleanList(_ values: [String]?) -> [String]? {
+        let cleaned = values?.compactMap(nonBlank)
+        return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
 }
 
 /// The interview echoed back by a successful create. All-optional so a 2xx never fails

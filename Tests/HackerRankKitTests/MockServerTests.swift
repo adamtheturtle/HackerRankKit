@@ -8,8 +8,6 @@ import HackerRankKit
 import HackerRankKitMock
 import Testing
 
-private nonisolated struct EmptyRequestBody: Encodable, Sendable {}
-
 /// End-to-end coverage of the client against the in-process mock server. Each test uses
 /// a client keyed by a unique API key, so the suite can run in parallel.
 @Suite("Mock server end-to-end")
@@ -135,7 +133,7 @@ struct MockServerTests {
         #expect(users.resources.first?.userName == "rhea@example.com")
         let user = try await client.scimUser(id: "scim-u1")
         #expect(user.id == "scim-u1")
-        let createdUser = try await client.createSCIMUser(body: EmptyRequestBody())
+        let createdUser = try await client.createSCIMUser(body: SCIMUserWriteRequest(userName: "rhea@example.com"))
         #expect(createdUser.userName == "rhea@example.com")
         try await client.lockSCIMUser(id: "scim-u1")
 
@@ -143,7 +141,7 @@ struct MockServerTests {
         #expect(groups.resources.first?.displayName == "Backend Hiring")
         let group = try await client.scimGroup(id: "scim-g1")
         #expect(group.id == "scim-g1")
-        let createdGroup = try await client.createSCIMGroup(body: EmptyRequestBody())
+        let createdGroup = try await client.createSCIMGroup(body: SCIMGroupWriteRequest(displayName: "Backend Hiring"))
         #expect(createdGroup.displayName == "Backend Hiring")
         try await client.deprovisionSCIMGroup(id: "scim-g1")
     }
@@ -153,10 +151,13 @@ struct MockServerTests {
         let globalCandidates = try await client.searchCandidates(query: "ada")
         #expect(globalCandidates.items.map(\.id) == ["c1"])
 
-        let questionOp = try await client.addTestcase(questionID: "q1", body: EmptyRequestBody())
+        let questionOp = try await client.addTestcase(
+            questionID: "q1",
+            options: QuestionTestcaseOptions(input: "input", output: "output", name: "Sample", score: 10)
+        )
         #expect(questionOp.id == "q-written")
 
-        let updatedInterview = try await client.updateInterview(id: "i1", body: EmptyRequestBody())
+        let updatedInterview = try await client.updateInterview(id: "i1", options: InterviewUpdateOptions(title: "Updated"))
         #expect(updatedInterview.id == "i-created")
         let deletedInterview = try await client.deleteInterview(id: "i1")
         #expect(deletedInterview.status == "scheduled")
