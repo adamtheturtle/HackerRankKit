@@ -540,6 +540,13 @@ public nonisolated struct WrittenQuestion: Decodable, Sendable {
     public let type: String?
 }
 
+/// A lightweight acknowledgement for question codestub and testcase operations.
+public nonisolated struct QuestionOperationResult: Decodable, Sendable {
+    public let id: String?
+    public let status: String?
+    public let message: String?
+}
+
 /// The body sent when creating a test.
 nonisolated struct CreateTestRequest: Encodable {
     let name: String
@@ -791,6 +798,30 @@ public nonisolated struct TeamMembershipResult: Decodable, Sendable {
     public let email: String?
 }
 
+/// An interview template returned by the interview-template endpoints.
+public nonisolated struct InterviewTemplate: Decodable, Identifiable, Sendable {
+    public let id: Int?
+    public let name: String?
+    public let title: String?
+    public let description: String?
+}
+
+/// An acknowledgement for interview-template writes that may return only status metadata.
+public nonisolated struct InterviewTemplateWriteResult: Decodable, Sendable {
+    public let id: Int?
+    public let status: String?
+    public let message: String?
+}
+
+/// An invite template returned by the invite-template endpoints.
+public nonisolated struct InviteTemplate: Decodable, Identifiable, Sendable {
+    public let id: String?
+    public let name: String?
+    public let subject: String?
+    public let body: String?
+    public let access: String?
+}
+
 /// The body sent when creating a QuickPad interview.
 nonisolated struct CreateQuickPadRequest: Encodable {
     let title: String?
@@ -812,4 +843,128 @@ public nonisolated struct CreatedInterview: Decodable, Sendable {
     public let id: String?
     public let url: String?
     public let status: String?
+}
+
+/// The body sent when creating an ATS-backed interview invite.
+nonisolated struct ATSCodePairRequest: Encodable {
+    let title: String
+    let requisitionID: String
+    let candidateID: String
+    let options: ATSCodePairOptions
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case requisitionID = "requisition_id"
+        case candidateID = "candidate_id"
+        case candidate
+        case sendEmail = "send_email"
+        case interviewMetadata = "interview_metadata"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encode(requisitionID, forKey: .requisitionID)
+        try container.encode(candidateID, forKey: .candidateID)
+        try container.encodeIfPresent(options.candidate, forKey: .candidate)
+        try container.encodeIfPresent(options.sendEmail, forKey: .sendEmail)
+        try container.encodeIfPresent(options.interviewMetadata, forKey: .interviewMetadata)
+    }
+}
+
+/// Optional fields for an ATS-backed interview invite.
+public nonisolated struct ATSCodePairOptions: Sendable, Equatable {
+    public let candidate: [String: HackerRankJSONValue]?
+    public let sendEmail: Bool?
+    public let interviewMetadata: [String: HackerRankJSONValue]?
+
+    public init(
+        candidate: [String: HackerRankJSONValue]? = nil,
+        sendEmail: Bool? = nil,
+        interviewMetadata: [String: HackerRankJSONValue]? = nil
+    ) {
+        self.candidate = candidate?.isEmpty == false ? candidate : nil
+        self.sendEmail = sendEmail
+        self.interviewMetadata = interviewMetadata?.isEmpty == false ? interviewMetadata : nil
+    }
+}
+
+/// The body sent when creating an ATS-backed code screen invite.
+nonisolated struct ATSCodeScreenRequest: Encodable {
+    let testID: String
+    let requisitionID: String
+    let candidateID: String
+    let email: String
+    let options: ATSCodeScreenOptions
+
+    enum CodingKeys: String, CodingKey {
+        case testID = "test_id"
+        case requisitionID = "requisition_id"
+        case candidateID = "candidate_id"
+        case email
+        case sendEmail = "send_email"
+        case testResultURL = "test_result_url"
+        case webhookAuthentication = "webhook_authentication"
+        case acceptResultUpdates = "accept_result_updates"
+        case force
+        case forceReattemptAfter = "force_reattempt_after"
+        case accommodations
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(testID, forKey: .testID)
+        try container.encode(requisitionID, forKey: .requisitionID)
+        try container.encode(candidateID, forKey: .candidateID)
+        try container.encode(email, forKey: .email)
+        try container.encodeIfPresent(options.sendEmail, forKey: .sendEmail)
+        try container.encodeIfPresent(options.testResultURL, forKey: .testResultURL)
+        try container.encodeIfPresent(options.webhookAuthentication, forKey: .webhookAuthentication)
+        try container.encodeIfPresent(options.acceptResultUpdates, forKey: .acceptResultUpdates)
+        try container.encodeIfPresent(options.force, forKey: .force)
+        try container.encodeIfPresent(options.forceReattemptAfter, forKey: .forceReattemptAfter)
+        try container.encodeIfPresent(options.accommodations, forKey: .accommodations)
+    }
+}
+
+/// Optional fields for an ATS-backed code screen invite.
+public nonisolated struct ATSCodeScreenOptions: Sendable, Equatable {
+    public let sendEmail: Bool?
+    public let testResultURL: String?
+    public let webhookAuthentication: [String: HackerRankJSONValue]?
+    public let acceptResultUpdates: Bool?
+    public let force: Bool?
+    public let forceReattemptAfter: Int?
+    public let accommodations: [String: HackerRankJSONValue]?
+
+    public init(
+        sendEmail: Bool? = nil,
+        testResultURL: String? = nil,
+        webhookAuthentication: [String: HackerRankJSONValue]? = nil,
+        acceptResultUpdates: Bool? = nil,
+        force: Bool? = nil,
+        forceReattemptAfter: Int? = nil,
+        accommodations: [String: HackerRankJSONValue]? = nil
+    ) {
+        self.sendEmail = sendEmail
+        self.testResultURL = Self.nonBlank(testResultURL)
+        self.webhookAuthentication = webhookAuthentication?.isEmpty == false ? webhookAuthentication : nil
+        self.acceptResultUpdates = acceptResultUpdates
+        self.force = force
+        self.forceReattemptAfter = forceReattemptAfter
+        self.accommodations = accommodations?.isEmpty == false ? accommodations : nil
+    }
+
+    private static func nonBlank(_ value: String?) -> String? {
+        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result?.isEmpty == false ? result : nil
+    }
+}
+
+/// The result returned by ATS invite endpoints.
+public nonisolated struct ATSInviteResult: Decodable, Sendable {
+    public let id: String?
+    public let url: String?
+    public let status: String?
+    public let email: String?
 }

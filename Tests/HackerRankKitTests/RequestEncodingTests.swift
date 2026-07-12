@@ -273,4 +273,45 @@ struct RequestEncodingTests {
         #expect(team["invite_as"] as? String == "Hiring Team")
         #expect(team["locations"] as? [String] == ["London"])
     }
+
+    @Test
+    func `ats invite requests encode documented fields`() throws {
+        let codePair = try encodedObject(ATSCodePairRequest(
+            title: "Backend Interview",
+            requisitionID: "REQ-1",
+            candidateID: "CAND-1",
+            options: ATSCodePairOptions(
+                candidate: ["email": .string("ada@example.com")],
+                sendEmail: true,
+                interviewMetadata: ["source": .string("ats")]
+            )
+        ))
+        #expect(codePair["title"] as? String == "Backend Interview")
+        #expect(codePair["requisition_id"] as? String == "REQ-1")
+        #expect(codePair["candidate_id"] as? String == "CAND-1")
+        #expect((codePair["candidate"] as? [String: Any])?["email"] as? String == "ada@example.com")
+        #expect(codePair["send_email"] as? Bool == true)
+
+        let codeScreen = try encodedObject(ATSCodeScreenRequest(
+            testID: "t1",
+            requisitionID: "REQ-1",
+            candidateID: "CAND-1",
+            email: "ada@example.com",
+            options: ATSCodeScreenOptions(
+                testResultURL: "https://example.com/result",
+                acceptResultUpdates: true,
+                force: true,
+                forceReattemptAfter: 3600,
+                accommodations: ["extra_time": .int(10)]
+            )
+        ))
+        #expect(codeScreen["test_id"] as? String == "t1")
+        #expect(codeScreen["requisition_id"] as? String == "REQ-1")
+        #expect(codeScreen["candidate_id"] as? String == "CAND-1")
+        #expect(codeScreen["email"] as? String == "ada@example.com")
+        #expect(codeScreen["test_result_url"] as? String == "https://example.com/result")
+        #expect(codeScreen["accept_result_updates"] as? Bool == true)
+        #expect(codeScreen["force"] as? Bool == true)
+        #expect(codeScreen["force_reattempt_after"] as? Int == 3600)
+    }
 }

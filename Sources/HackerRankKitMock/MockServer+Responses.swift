@@ -29,6 +29,12 @@ nonisolated enum MockResponses {
         if path.contains("/audit_log") { return MockFixtures.auditLog }
         if path.contains("/candidates") { return candidatesBody(path: path) }
         if path.hasSuffix("/inviters") { return MockFixtures.testInviters }
+        if path.contains("/interview_templates") {
+            return path.hasSuffix("/interview_templates") ? MockFixtures.interviewTemplates : MockFixtures.interviewTemplate
+        }
+        if path.contains("/templates") {
+            return path.hasSuffix("/templates") ? MockFixtures.inviteTemplates : MockFixtures.inviteTemplate
+        }
         if path.contains("/questions") {
             return path.hasSuffix("/questions") ? MockFixtures.questions : MockFixtures.questionDetail
         }
@@ -50,8 +56,10 @@ nonisolated enum MockResponses {
     /// precedes `/tests` because an invite path contains both.
     private static func writeAckBody(for url: URL) -> String {
         let path = url.path
+        if path.contains("/ats") { return MockFixtures.atsInvite }
         if path.contains("/candidates") { return MockFixtures.createdCandidate }
         if path.contains("/teams") && path.contains("/users") { return MockFixtures.teamMembership }
+        if path.contains("/interview_templates") { return MockFixtures.interviewTemplate }
         if path.contains("/users") { return MockFixtures.createdUser }
         if path.contains("/questions") { return MockFixtures.writtenQuestion }
         if path.contains("/teams") { return MockFixtures.createdTeam }
@@ -87,7 +95,7 @@ nonisolated enum MockResponses {
     /// empty term returns the whole fixture.
     private static func searchBody(for url: URL, query: [String: String]) -> String {
         let base = url.path.contains("/candidates") ? MockFixtures.candidateSearch : MockFixtures.userSearch
-        let needle = (query["search"] ?? "").lowercased()
+        let needle = (query["search"] ?? query["query"] ?? "").lowercased()
         guard !needle.isEmpty,
               let data = base.data(using: .utf8),
               var envelope = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

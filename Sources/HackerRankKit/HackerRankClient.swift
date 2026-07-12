@@ -384,6 +384,85 @@ public struct HackerRankClient {
         )
     }
 
+    /// Updates a coding question's custom code stubs (`PUT /questions/{id}/custom_codestubs`).
+    @discardableResult
+    public func updateCustomCodeStubs<Body: Encodable>(
+        questionID: String,
+        body: Body
+    ) async throws -> QuestionOperationResult {
+        try await rest.send(
+            QuestionOperationResult.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/custom_codestubs",
+            body: body
+        )
+    }
+
+    /// Generates code stubs for a coding question (`PUT /questions/{id}/generate`).
+    @discardableResult
+    public func generateCodeStubs<Body: Encodable>(
+        questionID: String,
+        body: Body
+    ) async throws -> QuestionOperationResult {
+        try await rest.send(
+            QuestionOperationResult.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/generate",
+            body: body
+        )
+    }
+
+    /// Adds a testcase to a question (`POST /questions/{id}/testcases`).
+    @discardableResult
+    public func addTestcase<Body: Encodable>(
+        questionID: String,
+        body: Body
+    ) async throws -> QuestionOperationResult {
+        try await rest.send(
+            QuestionOperationResult.self,
+            method: "POST",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases",
+            body: body
+        )
+    }
+
+    /// Updates a testcase (`PUT /questions/{id}/testcases/{testcase_id}`).
+    @discardableResult
+    public func updateTestcase<Body: Encodable>(
+        questionID: String,
+        testcaseID: String,
+        body: Body
+    ) async throws -> QuestionOperationResult {
+        try await rest.send(
+            QuestionOperationResult.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases/\(Self.pathSegment(testcaseID))",
+            body: body
+        )
+    }
+
+    /// Deletes a testcase (`DELETE /questions/{id}/testcases/{testcase_id}`).
+    @discardableResult
+    public func deleteTestcase(questionID: String, testcaseID: String) async throws -> QuestionOperationResult {
+        try await rest.send(
+            QuestionOperationResult.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases/\(Self.pathSegment(testcaseID))",
+            body: EmptyBody()
+        )
+    }
+
+    /// Deletes all testcases for a question (`DELETE /questions/{id}/testcases/delete_all`).
+    @discardableResult
+    public func deleteAllTestcases(questionID: String) async throws -> QuestionOperationResult {
+        try await rest.send(
+            QuestionOperationResult.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases/delete_all",
+            body: EmptyBody()
+        )
+    }
+
     // MARK: Interviews
 
     /// One page of the account's interviews, plus the cursor for the next page.
@@ -453,6 +532,28 @@ public struct HackerRankClient {
         try await rest.fetch(InterviewDetail.self, path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))")
     }
 
+    /// Updates an interview (`PUT /interviews/{id}`).
+    @discardableResult
+    public func updateInterview<Body: Encodable>(id: String, body: Body) async throws -> CreatedInterview {
+        try await rest.send(
+            CreatedInterview.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))",
+            body: body
+        )
+    }
+
+    /// Deletes an interview (`DELETE /interviews/{id}`). Destructive, so a UI should confirm before this is called.
+    @discardableResult
+    public func deleteInterview(id: String) async throws -> CreatedInterview {
+        try await rest.send(
+            CreatedInterview.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))",
+            body: EmptyBody()
+        )
+    }
+
     /// The interview's conversation transcript (`GET /interviews/{id}/transcript`) — the
     /// spoken/typed messages only; the collaborative pad's source code is not exposed.
     public func interviewTranscript(id: String) async throws -> InterviewTranscript {
@@ -460,6 +561,101 @@ public struct HackerRankClient {
             InterviewTranscript.self,
             path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))/transcript"
         )
+    }
+
+    // MARK: Interview templates
+
+    /// One page of interview templates (`GET /interview_templates`).
+    public func interviewTemplatesPage(after cursor: String? = nil) async throws -> Page<InterviewTemplate> {
+        try await page(HackerRankPage<InterviewTemplate>.self, path: "\(Self.apiV3)/interview_templates", cursor: cursor)
+    }
+
+    /// Shows an interview template (`GET /interview_templates/{template_id}`).
+    public func interviewTemplate(id: Int) async throws -> InterviewTemplate {
+        try await rest.fetch(InterviewTemplate.self, path: "\(Self.apiV3)/interview_templates/\(id)")
+    }
+
+    /// Creates an interview template (`POST /interview_templates`).
+    @discardableResult
+    public func createInterviewTemplate<Body: Encodable>(body: Body) async throws -> InterviewTemplate {
+        try await rest.send(InterviewTemplate.self, method: "POST", path: "\(Self.apiV3)/interview_templates", body: body)
+    }
+
+    /// Updates an interview template (`PUT /interview_templates/{template_id}`).
+    @discardableResult
+    public func updateInterviewTemplate<Body: Encodable>(id: Int, body: Body) async throws -> InterviewTemplate {
+        try await rest.send(
+            InterviewTemplate.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/interview_templates/\(id)",
+            body: body
+        )
+    }
+
+    /// Deletes an interview template (`DELETE /interview_templates/{template_id}`).
+    @discardableResult
+    public func deleteInterviewTemplate(id: Int) async throws -> InterviewTemplateWriteResult {
+        try await rest.send(
+            InterviewTemplateWriteResult.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/interview_templates/\(id)",
+            body: EmptyBody()
+        )
+    }
+
+    // MARK: Invite templates
+
+    /// One page of invite templates (`GET /templates`), optionally filtered by access.
+    public func inviteTemplatesPage(after cursor: String? = nil, access: String? = nil) async throws -> Page<InviteTemplate> {
+        try await page(
+            HackerRankPage<InviteTemplate>.self,
+            path: "\(Self.apiV3)/templates",
+            cursor: cursor,
+            query: Self.nonBlank(access).map { [URLQueryItem(name: "access", value: $0)] } ?? []
+        )
+    }
+
+    /// Shows an invite template (`GET /templates/{template_id}`).
+    public func inviteTemplate(id: String) async throws -> InviteTemplate {
+        try await rest.fetch(InviteTemplate.self, path: "\(Self.apiV3)/templates/\(Self.pathSegment(id))")
+    }
+
+    // MARK: ATS
+
+    /// Creates an ATS-backed interview invite (`POST /ats/codepair`).
+    @discardableResult
+    public func createATSCodePairInvite(
+        title: String,
+        requisitionID: String,
+        candidateID: String,
+        options: ATSCodePairOptions = ATSCodePairOptions()
+    ) async throws -> ATSInviteResult {
+        let body = ATSCodePairRequest(
+            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+            requisitionID: requisitionID.trimmingCharacters(in: .whitespacesAndNewlines),
+            candidateID: candidateID.trimmingCharacters(in: .whitespacesAndNewlines),
+            options: options
+        )
+        return try await rest.send(ATSInviteResult.self, method: "POST", path: "\(Self.apiV3)/ats/codepair", body: body)
+    }
+
+    /// Creates an ATS-backed test candidate invite (`POST /ats/codescreen`).
+    @discardableResult
+    public func createATSCodeScreenInvite(
+        testID: String,
+        requisitionID: String,
+        candidateID: String,
+        email: String,
+        options: ATSCodeScreenOptions = ATSCodeScreenOptions()
+    ) async throws -> ATSInviteResult {
+        let body = ATSCodeScreenRequest(
+            testID: testID.trimmingCharacters(in: .whitespacesAndNewlines),
+            requisitionID: requisitionID.trimmingCharacters(in: .whitespacesAndNewlines),
+            candidateID: candidateID.trimmingCharacters(in: .whitespacesAndNewlines),
+            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+            options: options
+        )
+        return try await rest.send(ATSInviteResult.self, method: "POST", path: "\(Self.apiV3)/ats/codescreen", body: body)
     }
 
     // MARK: Users

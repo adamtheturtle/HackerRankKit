@@ -22,6 +22,17 @@ extension HackerRankClient {
         )
     }
 
+    /// Searches candidates across the organisation (`GET /candidates/search?query=`).
+    public func searchCandidates(query: String, after cursor: String? = nil) async throws -> Page<TestCandidate> {
+        try await searchPage(
+            HackerRankPage<TestCandidate>.self,
+            path: "\(Self.apiV3)/candidates/search",
+            queryItemName: "query",
+            query: query,
+            cursor: cursor
+        )
+    }
+
     /// Searches a test's candidates **server-side** (`GET /tests/{id}/candidates/search?search=`).
     /// Returns the same paged shape as the `/candidates` list, so for a test with many candidates
     /// a match deep in the list is reachable rather than limited to loaded rows.
@@ -42,15 +53,16 @@ extension HackerRankClient {
     private func searchPage<Item: Decodable & Sendable>(
         _: HackerRankPage<Item>.Type,
         path: String,
+        queryItemName: String = "search",
         query: String,
         cursor: String?
     ) async throws -> Page<Item> {
-        let url = try searchURL(path: path, query: query, cursor: cursor)
+        let url = try searchURL(path: path, queryItemName: queryItemName, query: query, cursor: cursor)
         let response = try await rest.performWithRetry(HackerRankPage<Item>.self, request: rest.authorizedGET(url))
         return Page(items: response.data, next: response.next, totalCount: response.totalCount)
     }
 
-    private func searchURL(path: String, query: String, cursor: String?) throws -> URL {
+    private func searchURL(path: String, queryItemName: String = "search", query: String, cursor: String?) throws -> URL {
         if let cursor {
             guard let url = cursorURL(cursor) else {
                 throw HackerRankError.http(0, "Invalid next-page URL: \(cursor)")
@@ -61,7 +73,7 @@ extension HackerRankClient {
 
         var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
         components?.queryItems = [
-            URLQueryItem(name: "search", value: query),
+            URLQueryItem(name: queryItemName, value: query),
             URLQueryItem(name: "limit", value: String(Self.pageSize))
         ]
         guard let url = components?.url else {

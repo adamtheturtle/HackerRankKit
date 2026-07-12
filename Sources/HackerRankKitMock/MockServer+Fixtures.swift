@@ -39,6 +39,11 @@ public nonisolated enum MockFixtures {
     {"id":"i-created","url":"https://www.hackerrank.com/x/interviews/i-created","status":"scheduled"}
     """#
 
+    /// The record returned when an ATS invite is created in the demo.
+    static let atsInvite = #"""
+    {"id":"ats-created","url":"https://www.hackerrank.com/x/ats/ats-created","status":"created","email":"ada@example.com"}
+    """#
+
     /// The record returned when a test is created/updated/deleted in the demo.
     static let createdTest = #"""
     {"id":"t-created","name":"New Test","state":"draft"}
@@ -202,6 +207,30 @@ public nonisolated enum MockFixtures {
       {"messageId":"m3","author":"Ian Interviewer","email":"ian@example.com","candidate":false,
        "timestamp":1746450120,"text":"Great. Can you walk me through your approach?"}
     ]}
+    """#
+
+    // MARK: - Templates
+
+    static let interviewTemplates = #"""
+    {"data":[
+      {"id":101,"name":"Backend Pairing","title":"Backend Pairing","description":"Live backend interview"},
+      {"id":102,"name":"Frontend Pairing","title":"Frontend Pairing"}
+    ],"next":null}
+    """#
+
+    static let interviewTemplate = #"""
+    {"id":101,"name":"Backend Pairing","title":"Backend Pairing","description":"Live backend interview"}
+    """#
+
+    static let inviteTemplates = #"""
+    {"data":[
+      {"id":"tpl-1","name":"Default Invite","subject":"Your HackerRank invite","body":"Please complete the assessment.","access":"company"},
+      {"id":"tpl-2","name":"Reminder","subject":"Reminder","access":"private"}
+    ],"next":null}
+    """#
+
+    static let inviteTemplate = #"""
+    {"id":"tpl-1","name":"Default Invite","subject":"Your HackerRank invite","body":"Please complete the assessment.","access":"company"}
     """#
 
     // MARK: - Users & teams

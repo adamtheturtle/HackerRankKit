@@ -8,6 +8,8 @@ import HackerRankKit
 import HackerRankKitMock
 import Testing
 
+private nonisolated struct EmptyRequestBody: Encodable, Sendable {}
+
 /// End-to-end coverage of the client against the in-process mock server. Each test uses
 /// a client keyed by a unique API key, so the suite can run in parallel.
 @Suite("Mock server end-to-end")
@@ -125,6 +127,40 @@ struct MockServerTests {
         #expect(team.name == "Backend Hiring")
         let membership = try await client.addTeamMember(teamID: "tm1", userID: "u1", license: "recruiter")
         #expect(membership.email == "rhea@example.com")
+    }
+
+    @Test
+    func `remaining documented gaps are routed by the mock server`() async throws {
+        let globalCandidates = try await client.searchCandidates(query: "ada")
+        #expect(globalCandidates.items.map(\.id) == ["c1"])
+
+        let questionOp = try await client.addTestcase(questionID: "q1", body: EmptyRequestBody())
+        #expect(questionOp.id == "q-written")
+
+        let updatedInterview = try await client.updateInterview(id: "i1", body: EmptyRequestBody())
+        #expect(updatedInterview.id == "i-created")
+        let deletedInterview = try await client.deleteInterview(id: "i1")
+        #expect(deletedInterview.status == "scheduled")
+
+        let interviewTemplates = try await client.interviewTemplatesPage()
+        #expect(interviewTemplates.items.first?.id == 101)
+        let interviewTemplate = try await client.interviewTemplate(id: 101)
+        #expect(interviewTemplate.name == "Backend Pairing")
+        let deletedTemplate = try await client.deleteInterviewTemplate(id: 101)
+        #expect(deletedTemplate.id == 101)
+
+        let inviteTemplates = try await client.inviteTemplatesPage(access: "company")
+        #expect(inviteTemplates.items.first?.id == "tpl-1")
+        let inviteTemplate = try await client.inviteTemplate(id: "tpl-1")
+        #expect(inviteTemplate.subject == "Your HackerRank invite")
+
+        let ats = try await client.createATSCodeScreenInvite(
+            testID: "t1",
+            requisitionID: "REQ-1",
+            candidateID: "CAND-1",
+            email: "ada@example.com"
+        )
+        #expect(ats.id == "ats-created")
     }
 
     @Test
