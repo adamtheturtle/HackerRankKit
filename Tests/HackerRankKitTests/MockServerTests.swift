@@ -130,6 +130,25 @@ struct MockServerTests {
     }
 
     @Test
+    func `scim provisioning endpoints are routed by the mock server`() async throws {
+        let users = try await client.scimUsers()
+        #expect(users.resources.first?.userName == "rhea@example.com")
+        let user = try await client.scimUser(id: "scim-u1")
+        #expect(user.id == "scim-u1")
+        let createdUser = try await client.createSCIMUser(body: EmptyRequestBody())
+        #expect(createdUser.userName == "rhea@example.com")
+        try await client.lockSCIMUser(id: "scim-u1")
+
+        let groups = try await client.scimGroups()
+        #expect(groups.resources.first?.displayName == "Backend Hiring")
+        let group = try await client.scimGroup(id: "scim-g1")
+        #expect(group.id == "scim-g1")
+        let createdGroup = try await client.createSCIMGroup(body: EmptyRequestBody())
+        #expect(createdGroup.displayName == "Backend Hiring")
+        try await client.deprovisionSCIMGroup(id: "scim-g1")
+    }
+
+    @Test
     func `remaining documented gaps are routed by the mock server`() async throws {
         let globalCandidates = try await client.searchCandidates(query: "ada")
         #expect(globalCandidates.items.map(\.id) == ["c1"])

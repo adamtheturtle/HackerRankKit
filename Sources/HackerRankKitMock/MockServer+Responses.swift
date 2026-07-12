@@ -25,6 +25,10 @@ nonisolated enum MockResponses {
     /// because their paths also contain another resource's segment.
     private static func body(for url: URL, query: [String: String]) -> String {
         let path = url.path
+        if path == "/Users" { return MockFixtures.scimUsers }
+        if path.hasPrefix("/Users/") { return MockFixtures.scimUser }
+        if path == "/Groups" { return MockFixtures.scimGroups }
+        if path.hasPrefix("/Groups/") { return MockFixtures.scimGroup }
         if path.hasSuffix("/search") { return searchBody(for: url, query: query) }
         if path.contains("/audit_log") { return MockFixtures.auditLog }
         if path.contains("/candidates") { return candidatesBody(path: path) }
@@ -56,6 +60,8 @@ nonisolated enum MockResponses {
     /// precedes `/tests` because an invite path contains both.
     private static func writeAckBody(for url: URL) -> String {
         let path = url.path
+        if path.hasPrefix("/Users") { return MockFixtures.scimUser }
+        if path.hasPrefix("/Groups") { return MockFixtures.scimGroup }
         if path.contains("/ats") { return MockFixtures.atsInvite }
         if path.contains("/candidates") { return MockFixtures.createdCandidate }
         if path.contains("/teams") && path.contains("/users") { return MockFixtures.teamMembership }

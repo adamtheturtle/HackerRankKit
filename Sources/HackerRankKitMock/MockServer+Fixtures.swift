@@ -233,6 +233,34 @@ public nonisolated enum MockFixtures {
     {"id":"tpl-1","name":"Default Invite","subject":"Your HackerRank invite","body":"Please complete the assessment.","access":"company"}
     """#
 
+    // MARK: - SCIM provisioning
+
+    static let scimUsers = #"""
+    {"Resources":[
+      {"id":"scim-u1","userName":"rhea@example.com","active":true,"role":"recruiter",
+       "team_admin":true,"company_admin":true,
+       "name":{"givenName":"Rhea","familyName":"Recruiter"},
+       "emails":[{"value":"rhea@example.com","primary":true}],"schemas":[]}
+    ],"totalResults":1,"startIndex":0,"itemsPerPage":100}
+    """#
+
+    static let scimUser = #"""
+    {"id":"scim-u1","userName":"rhea@example.com","active":true,"role":"recruiter",
+     "team_admin":true,"company_admin":true,
+     "name":{"givenName":"Rhea","familyName":"Recruiter"},
+     "emails":[{"value":"rhea@example.com","primary":true}],"schemas":[]}
+    """#
+
+    static let scimGroups = #"""
+    {"Resources":[
+      {"id":"scim-g1","displayName":"Backend Hiring","members":[{"value":"scim-u1"}],"schemas":[]}
+    ],"totalResults":1,"startIndex":0,"itemsPerPage":100}
+    """#
+
+    static let scimGroup = #"""
+    {"id":"scim-g1","displayName":"Backend Hiring","members":[{"value":"scim-u1"}],"schemas":[]}
+    """#
+
     // MARK: - Users & teams
 
     static let users = #"""

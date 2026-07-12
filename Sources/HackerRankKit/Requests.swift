@@ -45,6 +45,81 @@ public nonisolated enum HackerRankJSONValue: Codable, Sendable, Equatable {
     }
 }
 
+/// A SCIM list response from the legacy `/Users` and `/Groups` provisioning endpoints.
+public nonisolated struct SCIMListResponse<Item: Decodable & Sendable>: Decodable, Sendable {
+    public let resources: [Item]
+    public let totalResults: Int?
+    public let startIndex: Int?
+    public let itemsPerPage: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case resources = "Resources"
+        case totalResults
+        case startIndex
+        case itemsPerPage
+        case data
+    }
+
+    public nonisolated init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        resources = (try? container.decode([Item].self, forKey: .resources))
+            ?? ((try? container.decode([Item].self, forKey: .data)) ?? [])
+        totalResults = try? container.decodeIfPresent(Int.self, forKey: .totalResults)
+        startIndex = try? container.decodeIfPresent(Int.self, forKey: .startIndex)
+        itemsPerPage = try? container.decodeIfPresent(Int.self, forKey: .itemsPerPage)
+    }
+}
+
+/// A user from the legacy SCIM `/Users` provisioning endpoints.
+public nonisolated struct SCIMUser: Decodable, Identifiable, Sendable {
+    public let id: String?
+    public let userName: String?
+    public let active: Bool?
+    public let role: String?
+    public let teamAdmin: Bool?
+    public let companyAdmin: Bool?
+    public let name: [String: HackerRankJSONValue]?
+    public let emails: [HackerRankJSONValue]?
+    public let schemas: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userName
+        case active
+        case role
+        case teamAdmin = "team_admin"
+        case companyAdmin = "company_admin"
+        case name
+        case emails
+        case schemas
+    }
+}
+
+/// A group/team from the legacy SCIM `/Groups` provisioning endpoints.
+public nonisolated struct SCIMGroup: Decodable, Identifiable, Sendable {
+    public let id: String?
+    public let displayName: String?
+    public let members: [HackerRankJSONValue]?
+    public let schemas: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName
+        case misspelledDisplayName = "diplayName"
+        case members
+        case schemas
+    }
+
+    public nonisolated init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try? container.decodeIfPresent(String.self, forKey: .id)
+        displayName = (try? container.decodeIfPresent(String.self, forKey: .displayName))
+            ?? (try? container.decodeIfPresent(String.self, forKey: .misspelledDisplayName))
+        members = try? container.decodeIfPresent([HackerRankJSONValue].self, forKey: .members)
+        schemas = try? container.decodeIfPresent([String].self, forKey: .schemas)
+    }
+}
+
 /// The body sent when inviting a candidate to a test. Encoded as the API's
 /// snake-case JSON; a blank name is omitted entirely rather than sent empty.
 nonisolated struct InviteCandidateRequest: Encodable {
