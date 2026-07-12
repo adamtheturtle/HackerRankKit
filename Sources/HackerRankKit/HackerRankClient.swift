@@ -179,6 +179,58 @@ public struct HackerRankClient {
         )
     }
 
+    /// Updates candidate metadata/invite settings (`PUT /tests/{test_id}/candidates/{candidate_id}`).
+    @discardableResult
+    public func updateCandidate(
+        testID: String,
+        candidateID: String,
+        options: CandidateUpdateOptions = CandidateUpdateOptions()
+    ) async throws -> TestCandidate {
+        try await rest.send(
+            TestCandidate.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))",
+            body: UpdateCandidateRequest(options: options)
+        )
+    }
+
+    /// Cancels an outstanding candidate invite (`DELETE /tests/{test_id}/candidates/{candidate_id}/invite`).
+    @discardableResult
+    public func cancelCandidateInvite(testID: String, candidateID: String) async throws -> CandidateWriteResult {
+        try await rest.send(
+            CandidateWriteResult.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))/invite",
+            body: EmptyBody()
+        )
+    }
+
+    /// Fetches the URL for a candidate's report PDF (`GET /tests/{test_id}/candidates/{candidate_id}/pdf?format=url`).
+    public func candidateReportPDF(testID: String, candidateID: String) async throws -> CandidateReportPDF {
+        var components = URLComponents(
+            url: baseURL.appending(
+                path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))/pdf"
+            ),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [URLQueryItem(name: "format", value: "url")]
+        guard let url = components?.url else {
+            throw HackerRankError.http(0, "Could not build the candidate report PDF URL.")
+        }
+        return try await rest.performWithRetry(CandidateReportPDF.self, request: rest.authorizedGET(url))
+    }
+
+    /// Deletes a candidate report (`DELETE /tests/{test_id}/candidates/{candidate_id}/report`).
+    @discardableResult
+    public func deleteCandidateReport(testID: String, candidateID: String) async throws -> CandidateWriteResult {
+        try await rest.send(
+            CandidateWriteResult.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))/report",
+            body: EmptyBody()
+        )
+    }
+
     /// Invites a candidate to a test (`POST /tests/{id}/candidates`). A UI should confirm
     /// the invite before it runs.
     ///
@@ -214,7 +266,18 @@ public struct HackerRankClient {
         return try await rest.send(CreatedTest.self, method: "POST", path: "\(Self.apiV3)/tests", body: body)
     }
 
-    /// Renames a test (`PATCH /tests/{id}`).
+    /// Archives a test (`POST /tests/{id}/archive`).
+    @discardableResult
+    public func archiveTest(testID: String) async throws -> CreatedTest {
+        try await rest.send(
+            CreatedTest.self,
+            method: "POST",
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/archive",
+            body: EmptyBody()
+        )
+    }
+
+    /// Renames a test (`PUT /tests/{id}`).
     @discardableResult
     public func updateTest(
         testID: String,
@@ -224,7 +287,7 @@ public struct HackerRankClient {
         let body = UpdateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines), options: options)
         return try await rest.send(
             CreatedTest.self,
-            method: "PATCH",
+            method: "PUT",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))",
             body: body
         )
@@ -287,7 +350,7 @@ public struct HackerRankClient {
         return try await rest.send(WrittenQuestion.self, method: "POST", path: "\(Self.apiV3)/questions", body: body)
     }
 
-    /// Updates question metadata (`PATCH /questions/{id}`). Pass only the fields that should
+    /// Updates question metadata (`PUT /questions/{id}`). Pass only the fields that should
     /// change; unset values are omitted.
     @discardableResult
     public func updateQuestion(
@@ -303,7 +366,7 @@ public struct HackerRankClient {
         )
         return try await rest.send(
             WrittenQuestion.self,
-            method: "PATCH",
+            method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))",
             body: body
         )
@@ -430,6 +493,33 @@ public struct HackerRankClient {
         return try await rest.send(CreatedUser.self, method: "POST", path: "\(Self.apiV3)/users", body: body)
     }
 
+    /// Retrieves a user by id (`GET /users/{id}`).
+    public func user(id: String) async throws -> User {
+        try await rest.fetch(User.self, path: "\(Self.apiV3)/users/\(Self.pathSegment(id))")
+    }
+
+    /// Updates a user (`PUT /users/{id}`).
+    @discardableResult
+    public func updateUser(id: String, options: UserUpdateOptions = UserUpdateOptions()) async throws -> User {
+        try await rest.send(
+            User.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/users/\(Self.pathSegment(id))",
+            body: UpdateUserRequest(options: options)
+        )
+    }
+
+    /// Locks a user (`DELETE /users/{id}`).
+    @discardableResult
+    public func lockUser(id: String) async throws -> UserWriteResult {
+        try await rest.send(
+            UserWriteResult.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/users/\(Self.pathSegment(id))",
+            body: EmptyBody()
+        )
+    }
+
     /// The user the token belongs to (`GET /users/me`). Used to auto-discover an
     /// account's identity. Returns a single user object (not a paged envelope).
     public func currentUser() async throws -> User {
@@ -449,6 +539,33 @@ public struct HackerRankClient {
             HackerRankPage<User>.self,
             path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users",
             cursor: cursor
+        )
+    }
+
+    /// Retrieves a team by id (`GET /teams/{id}`).
+    public func team(id: String) async throws -> Team {
+        try await rest.fetch(Team.self, path: "\(Self.apiV3)/teams/\(Self.pathSegment(id))")
+    }
+
+    /// Updates a team (`PUT /teams/{id}`).
+    @discardableResult
+    public func updateTeam(id: String, options: TeamUpdateOptions = TeamUpdateOptions()) async throws -> Team {
+        try await rest.send(
+            Team.self,
+            method: "PUT",
+            path: "\(Self.apiV3)/teams/\(Self.pathSegment(id))",
+            body: UpdateTeamRequest(options: options)
+        )
+    }
+
+    /// Deletes a team (`DELETE /teams/{id}`). Destructive, so a UI should confirm before this is called.
+    @discardableResult
+    public func deleteTeam(id: String) async throws -> CreatedTeam {
+        try await rest.send(
+            CreatedTeam.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/teams/\(Self.pathSegment(id))",
+            body: EmptyBody()
         )
     }
 
@@ -472,6 +589,43 @@ public struct HackerRankClient {
             method: "POST",
             path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users",
             body: body
+        )
+    }
+
+    /// Adds an existing user to a team (`POST /teams/{team_id}/users/{user_id}?license=`).
+    @discardableResult
+    public func addTeamMember(teamID: String, userID: String, license: String? = nil) async throws
+        -> TeamMembershipResult {
+        var components = URLComponents(
+            url: baseURL.appending(
+                path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))"
+            ),
+            resolvingAgainstBaseURL: false
+        )
+        if let license = Self.nonBlank(license) {
+            components?.queryItems = [URLQueryItem(name: "license", value: license)]
+        }
+        guard let url = components?.url else {
+            throw HackerRankError.http(0, "Could not build the team membership URL.")
+        }
+        let request = RESTRequest(
+            url: url,
+            method: "POST",
+            headers: [
+                "Authorization": "Bearer \(token)",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            ],
+            body: try Self.makeEncoder().encode(EmptyBody())
+        )
+        return try await rest.perform(TeamMembershipResult.self, request: request)
+    }
+
+    /// Retrieves a team membership (`GET /teams/{team_id}/users/{user_id}`).
+    public func teamMembership(teamID: String, userID: String) async throws -> TeamMembershipResult {
+        try await rest.fetch(
+            TeamMembershipResult.self,
+            path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))"
         )
     }
 

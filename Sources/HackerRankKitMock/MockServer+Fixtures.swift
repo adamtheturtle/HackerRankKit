@@ -229,6 +229,13 @@ public nonisolated enum MockFixtures {
      "country":"GB","role":"admin","status":"active","company_admin":true}
     """#
 
+    /// The single-user object returned by `/users/{id}` in the demo.
+    static let singleUser = #"""
+    {"id":"u1","email":"rhea@example.com","firstname":"Rhea","lastname":"Recruiter",
+     "country":"GB","role":"recruiter","status":"active","teams":["tm1","tm2"],
+     "activated":true,"company_admin":true,"team_admin":true}
+    """#
+
     static let teams = #"""
     {"data":[
       {"id":"tm1","name":"Backend Hiring","owner":"u1","created_at":"2026-04-01T09:00:00Z",
@@ -238,6 +245,18 @@ public nonisolated enum MockFixtures {
        "recruiter_count":1,"developer_count":5,"locations":["Remote"]},
       {"id":"tm3","name":"Unstaffed Team"}
     ],"next":null}
+    """#
+
+    /// The single-team object returned by `/teams/{id}` in the demo.
+    static let singleTeam = #"""
+    {"id":"tm1","name":"Backend Hiring","owner":"u1","created_at":"2026-04-01T09:00:00Z",
+     "recruiter_count":3,"developer_count":12,"interviewer_count":8,
+     "locations":["London","Berlin"],"departments":["Engineering","Platform"]}
+    """#
+
+    /// The membership object returned by `/teams/{team_id}/users/{user_id}` in the demo.
+    static let teamMembership = #"""
+    {"id":"u1","email":"rhea@example.com","role":"recruiter","team_id":"tm1"}
     """#
 
     // MARK: - Search

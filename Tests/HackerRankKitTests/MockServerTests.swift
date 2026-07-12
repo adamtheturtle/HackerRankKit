@@ -105,6 +105,29 @@ struct MockServerTests {
     }
 
     @Test
+    func `core management gaps are routed by the mock server`() async throws {
+        let archived = try await client.archiveTest(testID: "t1")
+        #expect(archived.id == "t-created")
+
+        let updatedCandidate = try await client.updateCandidate(
+            testID: "t1",
+            candidateID: "c1",
+            options: CandidateUpdateOptions(fullName: "Ada Lovelace")
+        )
+        #expect(updatedCandidate.id == "c-invited")
+
+        let pdf = try await client.candidateReportPDF(testID: "t1", candidateID: "c1")
+        #expect(pdf.pdfURL == "https://www.hackerrank.com/x/candidates/c1/report.pdf")
+
+        let user = try await client.user(id: "u1")
+        #expect(user.email == "rhea@example.com")
+        let team = try await client.team(id: "tm1")
+        #expect(team.name == "Backend Hiring")
+        let membership = try await client.addTeamMember(teamID: "tm1", userID: "u1", license: "recruiter")
+        #expect(membership.email == "rhea@example.com")
+    }
+
+    @Test
     func `an unauthorized client surfaces isUnauthorized`() async throws {
         let client = HackerRankClient.mock(unauthorized: true, key: "bad-\(UUID().uuidString)")
         await #expect {

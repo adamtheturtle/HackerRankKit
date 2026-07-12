@@ -222,4 +222,55 @@ struct RequestEncodingTests {
         #expect(object["languages"] as? [String] == ["python"])
         #expect(object["skills"] as? [String] == ["Algorithms"])
     }
+
+    @Test
+    func `candidate update encodes documented optional fields`() throws {
+        let request = UpdateCandidateRequest(
+            options: CandidateUpdateOptions(
+                fullName: "Ada Lovelace",
+                atsState: 2,
+                inviteValidFrom: "2026-07-10T09:00:00Z",
+                inviteMetadata: ["ats_candidate_id": .string("cand-1")],
+                testResultURL: "https://example.com/result",
+                acceptResultUpdates: true,
+                tags: ["priority", ""],
+                accommodations: ["extra_time": .int(15)]
+            )
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["full_name"] as? String == "Ada Lovelace")
+        #expect(object["ats_state"] as? Int == 2)
+        #expect(object["invite_valid_from"] as? String == "2026-07-10T09:00:00Z")
+        #expect((object["invite_metadata"] as? [String: Any])?["ats_candidate_id"] as? String == "cand-1")
+        #expect(object["test_result_url"] as? String == "https://example.com/result")
+        #expect(object["accept_result_updates"] as? Bool == true)
+        #expect(object["tags"] as? [String] == ["priority"])
+        #expect((object["accommodations"] as? [String: Any])?["extra_time"] as? Int == 15)
+    }
+
+    @Test
+    func `user and team updates encode snake case fields`() throws {
+        let user = try encodedObject(UpdateUserRequest(options: UserUpdateOptions(
+            firstName: "Rhea",
+            questionsPermission: 3,
+            sharedCandidatesPermission: 2,
+            companyAdmin: true
+        )))
+        #expect(user["firstname"] as? String == "Rhea")
+        #expect(user["questions_permission"] as? Int == 3)
+        #expect(user["shared_candidates_permission"] as? Int == 2)
+        #expect(user["company_admin"] as? Bool == true)
+
+        let team = try encodedObject(UpdateTeamRequest(options: TeamUpdateOptions(
+            name: "Backend Hiring",
+            recruiterCap: 5,
+            inviteAs: "Hiring Team",
+            locations: ["London", ""]
+        )))
+        #expect(team["name"] as? String == "Backend Hiring")
+        #expect(team["recruiter_cap"] as? Int == 5)
+        #expect(team["invite_as"] as? String == "Hiring Team")
+        #expect(team["locations"] as? [String] == ["London"])
+    }
 }

@@ -12,7 +12,7 @@ nonisolated enum MockResponses {
     /// Routes a request to its status code and JSON body. Writes (create/update/delete)
     /// are acknowledged with a canned record; reads return the matching fixture.
     static func respond(method: String, url: URL, query: [String: String] = [:]) -> (Int, Data) {
-        if method == "POST" || method == "PATCH" || method == "DELETE" {
+        if method == "POST" || method == "PUT" || method == "PATCH" || method == "DELETE" {
             let status = method == "POST" ? 201 : 200
             return (status, Data(writeAckBody(for: url).utf8))
         }
@@ -35,8 +35,11 @@ nonisolated enum MockResponses {
         if path.contains("/interviews") {
             return interviewSingleBody(path: path) ?? MockFixtures.interviews
         }
+        if path.contains("/teams/") && path.contains("/users/") { return MockFixtures.teamMembership }
         if path.hasSuffix("/users/me") { return MockFixtures.currentUser }
+        if path.contains("/users/") { return MockFixtures.singleUser }
         if path.contains("/users") { return MockFixtures.users }
+        if path.contains("/teams/") { return MockFixtures.singleTeam }
         if path.contains("/teams") { return MockFixtures.teams }
         if path.contains("/tests") { return testsBody(for: url, query: query) }
         return #"{"data":[],"next":null}"#
@@ -47,11 +50,12 @@ nonisolated enum MockResponses {
     /// precedes `/tests` because an invite path contains both.
     private static func writeAckBody(for url: URL) -> String {
         let path = url.path
+        if path.contains("/candidates") { return MockFixtures.createdCandidate }
+        if path.contains("/teams") && path.contains("/users") { return MockFixtures.teamMembership }
         if path.contains("/users") { return MockFixtures.createdUser }
         if path.contains("/questions") { return MockFixtures.writtenQuestion }
         if path.contains("/teams") { return MockFixtures.createdTeam }
         if path.contains("/interviews") { return MockFixtures.createdInterview }
-        if path.contains("/candidates") { return MockFixtures.createdCandidate }
         return MockFixtures.createdTest
     }
 
