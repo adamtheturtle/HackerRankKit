@@ -1,0 +1,39 @@
+# SwiftLint configuration for HackerRankKit.
+# Lints the hand-written sources and tests; the SwiftPM build directory holds
+# generated code (e.g. the test entry point) that we never want to lint.
+
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+
+# The size rules below are relaxed rather than satisfied. This package mirrors a large
+# REST API surface: `Requests.swift` is one wire model per endpoint and
+# `HackerRankClient` is one method per endpoint. Those files are long because the API is
+# wide, not because any single piece of logic is tangled, and splitting them on a line
+# count would scatter one coherent surface across arbitrary file boundaries. The limits
+# are set above today's largest file so genuine growth still trips them.
+file_length:
+  warning: 1500
+  error: 2000
+
+type_body_length:
+  warning: 750
+  error: 1000
+
+# `MockServer+Responses` routes a request path to a canned payload. That is one flat
+# switch over endpoints, so its complexity score tracks the number of endpoints rather
+# than any nesting or branching depth.
+cyclomatic_complexity:
+  warning: 25
+  error: 35
+
+identifier_name:
+  # Short names here mirror the HackerRank wire format and the domain: `op` for a
+  # patch operation, `to` for the end of a date range, `me` for the current-user
+  # fixture. The default three-character minimum would force padding that reads worse.
+  min_length:
+    warning: 1
+    error: 1

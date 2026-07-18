@@ -34,7 +34,9 @@ nonisolated enum MockResponses {
         if path.contains("/candidates") { return candidatesBody(path: path) }
         if path.hasSuffix("/inviters") { return MockFixtures.testInviters }
         if path.contains("/interview_templates") {
-            return path.hasSuffix("/interview_templates") ? MockFixtures.interviewTemplates : MockFixtures.interviewTemplate
+            return path.hasSuffix("/interview_templates")
+                ? MockFixtures.interviewTemplates
+                : MockFixtures.interviewTemplate
         }
         if path.contains("/templates") {
             return path.hasSuffix("/templates") ? MockFixtures.inviteTemplates : MockFixtures.inviteTemplate
