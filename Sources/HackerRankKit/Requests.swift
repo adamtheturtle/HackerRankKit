@@ -70,8 +70,12 @@ public nonisolated struct SCIMListResponse<Item: Decodable & Sendable>: Decodabl
 
     public nonisolated init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        resources = (try? container.decode([Item].self, forKey: .resources))
-            ?? ((try? container.decode([Item].self, forKey: .data)) ?? [])
+        // Decoded **leniently**, like `HackerRankPage`: the `try?` has to sit inside the array
+        // so a single malformed row (a numeric `id` where `SCIMUser.id` is a `String?`, say) is
+        // dropped on its own. Wrapping the whole array instead discards every good row too, so
+        // a fully populated directory silently reads as empty.
+        resources = (try? container.decode([LenientElement<Item>].self, forKey: .resources))?.compactMap(\.value)
+            ?? ((try? container.decode([LenientElement<Item>].self, forKey: .data))?.compactMap(\.value) ?? [])
         totalResults = try? container.decodeIfPresent(Int.self, forKey: .totalResults)
         startIndex = try? container.decodeIfPresent(Int.self, forKey: .startIndex)
         itemsPerPage = try? container.decodeIfPresent(Int.self, forKey: .itemsPerPage)

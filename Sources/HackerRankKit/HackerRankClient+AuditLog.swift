@@ -31,19 +31,10 @@ extension HackerRankClient {
             return url
         }
 
-        var components = URLComponents(
-            url: baseURL.appending(path: "\(Self.apiV3)/audit_log"),
-            resolvingAgainstBaseURL: false
-        )
         var query = [URLQueryItem(name: "limit", value: String(Self.pageSize))]
         if let userID, !userID.isEmpty {
             query.append(URLQueryItem(name: "user_id", value: userID))
         }
-        components?.queryItems = query
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the audit-log URL.")
-        }
-
-        return url
+        return try url(path: "\(Self.apiV3)/audit_log", query: query)
     }
 }

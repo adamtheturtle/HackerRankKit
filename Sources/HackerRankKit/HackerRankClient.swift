@@ -173,7 +173,7 @@ public struct HackerRankClient {
     /// The richer single-candidate read (`GET /tests/{test_id}/candidates/{candidate_id}`),
     /// backing detail refreshes that need fields beyond the paged list row.
     public func candidate(testID: String, candidateID: String) async throws -> TestCandidate {
-        try await rest.fetch(
+        try await fetch(
             TestCandidate.self,
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))"
         )
@@ -186,7 +186,7 @@ public struct HackerRankClient {
         candidateID: String,
         options: CandidateUpdateOptions = CandidateUpdateOptions()
     ) async throws -> TestCandidate {
-        try await rest.send(
+        try await send(
             TestCandidate.self,
             method: "PUT",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))",
@@ -197,7 +197,7 @@ public struct HackerRankClient {
     /// Cancels an outstanding candidate invite (`DELETE /tests/{test_id}/candidates/{candidate_id}/invite`).
     @discardableResult
     public func cancelCandidateInvite(testID: String, candidateID: String) async throws -> CandidateWriteResult {
-        try await rest.send(
+        try await send(
             CandidateWriteResult.self,
             method: "DELETE",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))/invite",
@@ -207,23 +207,17 @@ public struct HackerRankClient {
 
     /// Fetches the URL for a candidate's report PDF (`GET /tests/{test_id}/candidates/{candidate_id}/pdf?format=url`).
     public func candidateReportPDF(testID: String, candidateID: String) async throws -> CandidateReportPDF {
-        var components = URLComponents(
-            url: baseURL.appending(
-                path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))/pdf"
-            ),
-            resolvingAgainstBaseURL: false
+        try await fetch(
+            CandidateReportPDF.self,
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))/pdf",
+            query: [URLQueryItem(name: "format", value: "url")]
         )
-        components?.queryItems = [URLQueryItem(name: "format", value: "url")]
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the candidate report PDF URL.")
-        }
-        return try await rest.performWithRetry(CandidateReportPDF.self, request: rest.authorizedGET(url))
     }
 
     /// Deletes a candidate report (`DELETE /tests/{test_id}/candidates/{candidate_id}/report`).
     @discardableResult
     public func deleteCandidateReport(testID: String, candidateID: String) async throws -> CandidateWriteResult {
-        try await rest.send(
+        try await send(
             CandidateWriteResult.self,
             method: "DELETE",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))/report",
@@ -251,7 +245,7 @@ public struct HackerRankClient {
             sendEmail: sendEmail,
             options: options
         )
-        return try await rest.send(
+        return try await send(
             InvitedCandidate.self,
             method: "POST",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates",
@@ -263,13 +257,13 @@ public struct HackerRankClient {
     @discardableResult
     public func createTest(name: String, options: TestWriteOptions = TestWriteOptions()) async throws -> CreatedTest {
         let body = CreateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines), options: options)
-        return try await rest.send(CreatedTest.self, method: "POST", path: "\(Self.apiV3)/tests", body: body)
+        return try await send(CreatedTest.self, method: "POST", path: "\(Self.apiV3)/tests", body: body)
     }
 
     /// Archives a test (`POST /tests/{id}/archive`).
     @discardableResult
     public func archiveTest(testID: String) async throws -> CreatedTest {
-        try await rest.send(
+        try await send(
             CreatedTest.self,
             method: "POST",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/archive",
@@ -285,7 +279,7 @@ public struct HackerRankClient {
         options: TestWriteOptions = TestWriteOptions()
     ) async throws -> CreatedTest {
         let body = UpdateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines), options: options)
-        return try await rest.send(
+        return try await send(
             CreatedTest.self,
             method: "PUT",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))",
@@ -297,7 +291,7 @@ public struct HackerRankClient {
     /// so a UI should confirm before this is called.
     @discardableResult
     public func deleteTest(testID: String) async throws -> CreatedTest {
-        try await rest.send(
+        try await send(
             CreatedTest.self,
             method: "DELETE",
             path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))",
@@ -308,7 +302,7 @@ public struct HackerRankClient {
     /// The richer single-test read (`GET /tests/{id}`) backing a detail view. Adds the
     /// candidate login links, the master password, and the MCQ scoring over the list row.
     public func test(id: String) async throws -> TestDetail {
-        try await rest.fetch(TestDetail.self, path: "\(Self.apiV3)/tests/\(Self.pathSegment(id))")
+        try await fetch(TestDetail.self, path: "\(Self.apiV3)/tests/\(Self.pathSegment(id))")
     }
 
     /// One page of users who can invite candidates to a test
@@ -331,7 +325,7 @@ public struct HackerRankClient {
     /// The richer single-question read (`GET /questions/{id}`) backing a detail view.
     /// Adds the MCQ options/answer and internal notes over the list row.
     public func question(id: String) async throws -> QuestionDetail {
-        try await rest.fetch(QuestionDetail.self, path: "\(Self.apiV3)/questions/\(Self.pathSegment(id))")
+        try await fetch(QuestionDetail.self, path: "\(Self.apiV3)/questions/\(Self.pathSegment(id))")
     }
 
     /// Creates a question (`POST /questions`) using the stable shared metadata fields.
@@ -347,7 +341,7 @@ public struct HackerRankClient {
             type: type.trimmingCharacters(in: .whitespacesAndNewlines),
             options: options
         )
-        return try await rest.send(WrittenQuestion.self, method: "POST", path: "\(Self.apiV3)/questions", body: body)
+        return try await send(WrittenQuestion.self, method: "POST", path: "\(Self.apiV3)/questions", body: body)
     }
 
     /// Updates question metadata (`PUT /questions/{id}`). Pass only the fields that should
@@ -364,7 +358,7 @@ public struct HackerRankClient {
             type: Self.nonBlank(type),
             options: options
         )
-        return try await rest.send(
+        return try await send(
             WrittenQuestion.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))",
@@ -376,7 +370,7 @@ public struct HackerRankClient {
     /// so a UI should confirm before this is called.
     @discardableResult
     public func deleteQuestion(questionID: String) async throws -> WrittenQuestion {
-        try await rest.send(
+        try await send(
             WrittenQuestion.self,
             method: "DELETE",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))",
@@ -390,7 +384,7 @@ public struct HackerRankClient {
         questionID: String,
         stubs: [QuestionCodeStub]
     ) async throws -> QuestionOperationResult {
-        try await rest.send(
+        try await send(
             QuestionOperationResult.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/custom_codestubs",
@@ -404,7 +398,7 @@ public struct HackerRankClient {
         questionID: String,
         options: CodeStubGenerationOptions = CodeStubGenerationOptions()
     ) async throws -> QuestionOperationResult {
-        try await rest.send(
+        try await send(
             QuestionOperationResult.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/generate",
@@ -418,7 +412,7 @@ public struct HackerRankClient {
         questionID: String,
         options: QuestionTestcaseOptions
     ) async throws -> QuestionOperationResult {
-        try await rest.send(
+        try await send(
             QuestionOperationResult.self,
             method: "POST",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases",
@@ -433,7 +427,7 @@ public struct HackerRankClient {
         testcaseID: String,
         options: QuestionTestcaseOptions
     ) async throws -> QuestionOperationResult {
-        try await rest.send(
+        try await send(
             QuestionOperationResult.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases/\(Self.pathSegment(testcaseID))",
@@ -444,7 +438,7 @@ public struct HackerRankClient {
     /// Deletes a testcase (`DELETE /questions/{id}/testcases/{testcase_id}`).
     @discardableResult
     public func deleteTestcase(questionID: String, testcaseID: String) async throws -> QuestionOperationResult {
-        try await rest.send(
+        try await send(
             QuestionOperationResult.self,
             method: "DELETE",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases/\(Self.pathSegment(testcaseID))",
@@ -455,7 +449,7 @@ public struct HackerRankClient {
     /// Deletes all testcases for a question (`DELETE /questions/{id}/testcases/delete_all`).
     @discardableResult
     public func deleteAllTestcases(questionID: String) async throws -> QuestionOperationResult {
-        try await rest.send(
+        try await send(
             QuestionOperationResult.self,
             method: "DELETE",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/testcases/delete_all",
@@ -496,7 +490,7 @@ public struct HackerRankClient {
         // The API rejects a titleless interview with HTTP 400, so fall back to a dated
         // default rather than surfacing an error for an optional title.
         let body = CreateQuickPadRequest(title: Self.nonBlank(title) ?? Self.defaultQuickPadTitle(), quickpad: true)
-        return try await rest.send(CreatedInterview.self, method: "POST", path: "\(Self.apiV3)/interviews", body: body)
+        return try await send(CreatedInterview.self, method: "POST", path: "\(Self.apiV3)/interviews", body: body)
     }
 
     /// Creates an instant Pad collaborative interview.
@@ -523,13 +517,13 @@ public struct HackerRankClient {
             candidate: Self.nonBlank(candidateEmail),
             notes: Self.nonBlank(notes)
         )
-        return try await rest.send(CreatedInterview.self, method: "POST", path: "\(Self.apiV3)/interviews", body: body)
+        return try await send(CreatedInterview.self, method: "POST", path: "\(Self.apiV3)/interviews", body: body)
     }
 
     /// The richer single-interview read (`GET /interviews/{id}`) backing a detail view.
     /// Adds the scheduled window, interviewers, owner, candidate, and result/résumé links.
     public func interview(id: String) async throws -> InterviewDetail {
-        try await rest.fetch(InterviewDetail.self, path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))")
+        try await fetch(InterviewDetail.self, path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))")
     }
 
     /// Updates an interview (`PUT /interviews/{id}`).
@@ -538,7 +532,7 @@ public struct HackerRankClient {
         id: String,
         options: InterviewUpdateOptions = InterviewUpdateOptions()
     ) async throws -> CreatedInterview {
-        try await rest.send(
+        try await send(
             CreatedInterview.self,
             method: "PUT",
             path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))",
@@ -549,7 +543,7 @@ public struct HackerRankClient {
     /// Deletes an interview (`DELETE /interviews/{id}`). Destructive, so a UI should confirm before this is called.
     @discardableResult
     public func deleteInterview(id: String) async throws -> CreatedInterview {
-        try await rest.send(
+        try await send(
             CreatedInterview.self,
             method: "DELETE",
             path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))",
@@ -560,7 +554,7 @@ public struct HackerRankClient {
     /// The interview's conversation transcript (`GET /interviews/{id}/transcript`) — the
     /// spoken/typed messages only; the collaborative pad's source code is not exposed.
     public func interviewTranscript(id: String) async throws -> InterviewTranscript {
-        try await rest.fetch(
+        try await fetch(
             InterviewTranscript.self,
             path: "\(Self.apiV3)/interviews/\(Self.pathSegment(id))/transcript"
         )
@@ -577,7 +571,7 @@ public struct HackerRankClient {
 
     /// Shows an interview template (`GET /interview_templates/{template_id}`).
     public func interviewTemplate(id: Int) async throws -> InterviewTemplate {
-        try await rest.fetch(InterviewTemplate.self, path: "\(Self.apiV3)/interview_templates/\(id)")
+        try await fetch(InterviewTemplate.self, path: "\(Self.apiV3)/interview_templates/\(id)")
     }
 
     /// Creates an interview template (`POST /interview_templates`).
@@ -585,7 +579,7 @@ public struct HackerRankClient {
     public func createInterviewTemplate(
         options: InterviewTemplateWriteOptions
     ) async throws -> InterviewTemplate {
-        try await rest.send(
+        try await send(
             InterviewTemplate.self,
             method: "POST",
             path: "\(Self.apiV3)/interview_templates",
@@ -599,7 +593,7 @@ public struct HackerRankClient {
         id: Int,
         options: InterviewTemplateWriteOptions = InterviewTemplateWriteOptions()
     ) async throws -> InterviewTemplate {
-        try await rest.send(
+        try await send(
             InterviewTemplate.self,
             method: "PUT",
             path: "\(Self.apiV3)/interview_templates/\(id)",
@@ -610,7 +604,7 @@ public struct HackerRankClient {
     /// Deletes an interview template (`DELETE /interview_templates/{template_id}`).
     @discardableResult
     public func deleteInterviewTemplate(id: Int) async throws -> InterviewTemplateWriteResult {
-        try await rest.send(
+        try await send(
             InterviewTemplateWriteResult.self,
             method: "DELETE",
             path: "\(Self.apiV3)/interview_templates/\(id)",
@@ -634,7 +628,7 @@ public struct HackerRankClient {
 
     /// Shows an invite template (`GET /templates/{template_id}`).
     public func inviteTemplate(id: String) async throws -> InviteTemplate {
-        try await rest.fetch(InviteTemplate.self, path: "\(Self.apiV3)/templates/\(Self.pathSegment(id))")
+        try await fetch(InviteTemplate.self, path: "\(Self.apiV3)/templates/\(Self.pathSegment(id))")
     }
 
     // MARK: ATS
@@ -653,7 +647,7 @@ public struct HackerRankClient {
             candidateID: candidateID.trimmingCharacters(in: .whitespacesAndNewlines),
             options: options
         )
-        return try await rest.send(ATSInviteResult.self, method: "POST", path: "\(Self.apiV3)/ats/codepair", body: body)
+        return try await send(ATSInviteResult.self, method: "POST", path: "\(Self.apiV3)/ats/codepair", body: body)
     }
 
     /// Creates an ATS-backed test candidate invite (`POST /ats/codescreen`).
@@ -672,7 +666,7 @@ public struct HackerRankClient {
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             options: options
         )
-        return try await rest.send(
+        return try await send(
             ATSInviteResult.self, method: "POST", path: "\(Self.apiV3)/ats/codescreen", body: body
         )
     }
@@ -687,25 +681,25 @@ public struct HackerRankClient {
 
     /// Retrieves a user from the legacy SCIM provisioning endpoint (`GET /Users/{id}`).
     public func scimUser(id: String) async throws -> SCIMUser {
-        try await rest.fetch(SCIMUser.self, path: "/Users/\(Self.pathSegment(id))")
+        try await fetch(SCIMUser.self, path: "/Users/\(Self.pathSegment(id))")
     }
 
     /// Creates a user through the legacy SCIM provisioning endpoint (`POST /Users`).
     @discardableResult
     public func createSCIMUser(body: SCIMUserWriteRequest) async throws -> SCIMUser {
-        try await rest.send(SCIMUser.self, method: "POST", path: "/Users", body: body)
+        try await send(SCIMUser.self, method: "POST", path: "/Users", body: body)
     }
 
     /// Replaces a user through the legacy SCIM provisioning endpoint (`PUT /Users/{id}`).
     @discardableResult
     public func updateSCIMUser(id: String, body: SCIMUserWriteRequest) async throws -> SCIMUser {
-        try await rest.send(SCIMUser.self, method: "PUT", path: "/Users/\(Self.pathSegment(id))", body: body)
+        try await send(SCIMUser.self, method: "PUT", path: "/Users/\(Self.pathSegment(id))", body: body)
     }
 
     /// Patches a user through the legacy SCIM provisioning endpoint (`PATCH /Users/{id}`).
     @discardableResult
     public func patchSCIMUser(id: String, body: SCIMPatchRequest) async throws -> SCIMUser {
-        try await rest.send(SCIMUser.self, method: "PATCH", path: "/Users/\(Self.pathSegment(id))", body: body)
+        try await send(SCIMUser.self, method: "PATCH", path: "/Users/\(Self.pathSegment(id))", body: body)
     }
 
     /// Locks a user through the legacy SCIM provisioning endpoint (`DELETE /Users/{id}`).
@@ -721,19 +715,19 @@ public struct HackerRankClient {
 
     /// Retrieves a group from the legacy SCIM provisioning endpoint (`GET /Groups/{id}`).
     public func scimGroup(id: String) async throws -> SCIMGroup {
-        try await rest.fetch(SCIMGroup.self, path: "/Groups/\(Self.pathSegment(id))")
+        try await fetch(SCIMGroup.self, path: "/Groups/\(Self.pathSegment(id))")
     }
 
     /// Creates a group through the legacy SCIM provisioning endpoint (`POST /Groups`).
     @discardableResult
     public func createSCIMGroup(body: SCIMGroupWriteRequest) async throws -> SCIMGroup {
-        try await rest.send(SCIMGroup.self, method: "POST", path: "/Groups", body: body)
+        try await send(SCIMGroup.self, method: "POST", path: "/Groups", body: body)
     }
 
     /// Patches a group through the legacy SCIM provisioning endpoint (`PATCH /Groups/{id}`).
     @discardableResult
     public func patchSCIMGroup(id: String, body: SCIMPatchRequest) async throws -> SCIMGroup {
-        try await rest.send(SCIMGroup.self, method: "PATCH", path: "/Groups/\(Self.pathSegment(id))", body: body)
+        try await send(SCIMGroup.self, method: "PATCH", path: "/Groups/\(Self.pathSegment(id))", body: body)
     }
 
     /// Deprovisions a group through the legacy SCIM provisioning endpoint (`DELETE /Groups/{id}`).
@@ -769,18 +763,18 @@ public struct HackerRankClient {
             role: Self.nonBlank(role),
             teams: teamIDs.isEmpty ? nil : teamIDs.map(CreateUserRequest.TeamRef.init)
         )
-        return try await rest.send(CreatedUser.self, method: "POST", path: "\(Self.apiV3)/users", body: body)
+        return try await send(CreatedUser.self, method: "POST", path: "\(Self.apiV3)/users", body: body)
     }
 
     /// Retrieves a user by id (`GET /users/{id}`).
     public func user(id: String) async throws -> User {
-        try await rest.fetch(User.self, path: "\(Self.apiV3)/users/\(Self.pathSegment(id))")
+        try await fetch(User.self, path: "\(Self.apiV3)/users/\(Self.pathSegment(id))")
     }
 
     /// Updates a user (`PUT /users/{id}`).
     @discardableResult
     public func updateUser(id: String, options: UserUpdateOptions = UserUpdateOptions()) async throws -> User {
-        try await rest.send(
+        try await send(
             User.self,
             method: "PUT",
             path: "\(Self.apiV3)/users/\(Self.pathSegment(id))",
@@ -791,7 +785,7 @@ public struct HackerRankClient {
     /// Locks a user (`DELETE /users/{id}`).
     @discardableResult
     public func lockUser(id: String) async throws -> UserWriteResult {
-        try await rest.send(
+        try await send(
             UserWriteResult.self,
             method: "DELETE",
             path: "\(Self.apiV3)/users/\(Self.pathSegment(id))",
@@ -802,7 +796,7 @@ public struct HackerRankClient {
     /// The user the token belongs to (`GET /users/me`). Used to auto-discover an
     /// account's identity. Returns a single user object (not a paged envelope).
     public func currentUser() async throws -> User {
-        try await rest.fetch(User.self, path: "\(Self.apiV3)/users/me")
+        try await fetch(User.self, path: "\(Self.apiV3)/users/me")
     }
 
     // MARK: Teams
@@ -823,13 +817,13 @@ public struct HackerRankClient {
 
     /// Retrieves a team by id (`GET /teams/{id}`).
     public func team(id: String) async throws -> Team {
-        try await rest.fetch(Team.self, path: "\(Self.apiV3)/teams/\(Self.pathSegment(id))")
+        try await fetch(Team.self, path: "\(Self.apiV3)/teams/\(Self.pathSegment(id))")
     }
 
     /// Updates a team (`PUT /teams/{id}`).
     @discardableResult
     public func updateTeam(id: String, options: TeamUpdateOptions = TeamUpdateOptions()) async throws -> Team {
-        try await rest.send(
+        try await send(
             Team.self,
             method: "PUT",
             path: "\(Self.apiV3)/teams/\(Self.pathSegment(id))",
@@ -840,7 +834,7 @@ public struct HackerRankClient {
     /// Deletes a team (`DELETE /teams/{id}`). Destructive, so a UI should confirm before this is called.
     @discardableResult
     public func deleteTeam(id: String) async throws -> CreatedTeam {
-        try await rest.send(
+        try await send(
             CreatedTeam.self,
             method: "DELETE",
             path: "\(Self.apiV3)/teams/\(Self.pathSegment(id))",
@@ -852,7 +846,7 @@ public struct HackerRankClient {
     @discardableResult
     public func createTeam(name: String) async throws -> CreatedTeam {
         let body = CreateTeamRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines))
-        return try await rest.send(CreatedTeam.self, method: "POST", path: "\(Self.apiV3)/teams", body: body)
+        return try await send(CreatedTeam.self, method: "POST", path: "\(Self.apiV3)/teams", body: body)
     }
 
     /// Adds a member to a team (`POST /teams/{id}/users`).
@@ -863,7 +857,7 @@ public struct HackerRankClient {
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             role: Self.nonBlank(role)
         )
-        return try await rest.send(
+        return try await send(
             TeamMembershipResult.self,
             method: "POST",
             path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users",
@@ -875,34 +869,18 @@ public struct HackerRankClient {
     @discardableResult
     public func addTeamMember(teamID: String, userID: String, license: String? = nil) async throws
         -> TeamMembershipResult {
-        var components = URLComponents(
-            url: baseURL.appending(
-                path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))"
-            ),
-            resolvingAgainstBaseURL: false
-        )
-        if let license = Self.nonBlank(license) {
-            components?.queryItems = [URLQueryItem(name: "license", value: license)]
-        }
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the team membership URL.")
-        }
-        let request = RESTRequest(
-            url: url,
+        try await send(
+            TeamMembershipResult.self,
             method: "POST",
-            headers: [
-                "Authorization": "Bearer \(token)",
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            ],
-            body: try Self.makeEncoder().encode(EmptyBody())
+            path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))",
+            query: Self.nonBlank(license).map { [URLQueryItem(name: "license", value: $0)] } ?? [],
+            body: EmptyBody()
         )
-        return try await rest.perform(TeamMembershipResult.self, request: request)
     }
 
     /// Retrieves a team membership (`GET /teams/{team_id}/users/{user_id}`).
     public func teamMembership(teamID: String, userID: String) async throws -> TeamMembershipResult {
-        try await rest.fetch(
+        try await fetch(
             TeamMembershipResult.self,
             path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))"
         )
@@ -912,7 +890,7 @@ public struct HackerRankClient {
     /// so a UI should confirm before this is called.
     @discardableResult
     public func removeTeamMember(teamID: String, userID: String) async throws -> TeamMembershipResult {
-        try await rest.send(
+        try await send(
             TeamMembershipResult.self,
             method: "DELETE",
             path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))",
@@ -929,16 +907,81 @@ public struct HackerRankClient {
     public func validateToken() async throws {
         guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
 
-        var components = URLComponents(
-            url: baseURL.appending(path: "\(Self.apiV3)/tests"),
-            resolvingAgainstBaseURL: false
-        )
-        components?.queryItems = [URLQueryItem(name: "limit", value: "1")]
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the validation URL.")
+        let url = try url(path: "\(Self.apiV3)/tests", query: [URLQueryItem(name: "limit", value: "1")])
+        _ = try await rest.performWithRetry(HackerRankPage<Test>.self, request: rest.authorizedGET(url))
+    }
+
+    // MARK: - URL building
+
+    /// Builds an absolute request URL from an **already percent-encoded** `path` and a set of
+    /// *unencoded* query items.
+    ///
+    /// Every request in this client goes through here rather than `URL.appending(path:)`.
+    /// `appending(path:)` percent-encodes whatever it is handed, so a path whose dynamic ids
+    /// have already been escaped by ``pathSegment(_:)`` would be encoded a *second* time —
+    /// `%40` becoming `%2540`, so the server sees the literal text `%40` instead of `@` and
+    /// the request addresses the wrong resource (or 404s). Assembling the URL from the
+    /// pre-encoded path applies exactly one encoding.
+    ///
+    /// The query is encoded by ``queryComponent(_:)`` rather than by `URLComponents`, which
+    /// leaves `+` untouched (see that method).
+    nonisolated func url(path: String, query: [URLQueryItem] = []) throws -> URL {
+        var text = baseURL.absoluteString
+        while text.hasSuffix("/") {
+            text.removeLast()
+        }
+        text += path.hasPrefix("/") ? path : "/\(path)"
+        if !query.isEmpty {
+            text += "?" + query.map { item in
+                let name = Self.queryComponent(item.name)
+                guard let value = item.value else { return name }
+
+                return "\(name)=\(Self.queryComponent(value))"
+            }
+            .joined(separator: "&")
+        }
+        guard let url = URL(string: text) else {
+            throw HackerRankError.http(0, "Could not build the URL for \(path).")
         }
 
-        _ = try await rest.performWithRetry(HackerRankPage<Test>.self, request: rest.authorizedGET(url))
+        return url
+    }
+
+    /// GETs `path` (already percent-encoded) with retries, as ``rest``'s own `fetch` would,
+    /// but building the URL through ``url(path:query:)`` so the path is encoded exactly once.
+    private func fetch<T: Decodable & Sendable>(
+        _ type: T.Type,
+        path: String,
+        query: [URLQueryItem] = []
+    ) async throws -> T {
+        guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
+
+        return try await rest.performWithRetry(type, request: rest.authorizedGET(try url(path: path, query: query)))
+    }
+
+    /// Sends a request with a JSON body to `path` (already percent-encoded), as ``rest``'s own
+    /// `send` would, but building the URL through ``url(path:query:)``. Mutating requests are
+    /// not retried, so this goes straight to `perform`.
+    private func send<T: Decodable & Sendable>(
+        _ type: T.Type,
+        method: String,
+        path: String,
+        query: [URLQueryItem] = [],
+        body: some Encodable
+    ) async throws -> T {
+        guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
+
+        let request = RESTRequest(
+            url: try url(path: path, query: query),
+            method: method,
+            headers: [
+                "Authorization": "Bearer \(token)",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            ],
+            body: try Self.makeEncoder().encode(body)
+        )
+        return try await rest.perform(type, request: request)
     }
 
     // MARK: - Paging helpers
@@ -960,7 +1003,7 @@ public struct HackerRankClient {
     private func sendNoContent(method: String, path: String) async throws {
         guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
 
-        var request = URLRequest(url: baseURL.appending(path: path))
+        var request = URLRequest(url: try url(path: path))
         request.httpMethod = method
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -982,15 +1025,10 @@ public struct HackerRankClient {
 
     /// Builds an offset-paginated URL for legacy endpoints that do not return a `next` cursor.
     nonisolated func offsetURL(path: String, limit: Int, offset: Int) throws -> URL {
-        var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
-        components?.queryItems = [
+        try url(path: path, query: [
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "offset", value: String(offset))
-        ]
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the offset-paginated URL.")
-        }
-        return url
+        ])
     }
 
     /// The absolute `cursor` URL when continuing, or the first-page URL (base + path +
@@ -1004,25 +1042,46 @@ public struct HackerRankClient {
             return url
         }
 
-        var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
-        components?.queryItems = [URLQueryItem(name: "limit", value: String(Self.pageSize))] + query
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the page URL.")
-        }
-
-        return url
+        return try url(path: path, query: [URLQueryItem(name: "limit", value: String(Self.pageSize))] + query)
     }
 
     /// Parses a server-provided pagination link. The strict parser rejects links the
     /// server can hand back in practice (e.g. an unencoded space where a search link
     /// echoes the query), and some deployments return links relative to the API host;
     /// tolerate both rather than failing the page.
+    ///
+    /// The result is **constrained to ``baseURL``'s origin** (scheme, host, and port). A
+    /// cursor is server-supplied data, and the next request carries the account's Bearer
+    /// token unconditionally, so an absolute `next` link naming another host would hand the
+    /// user's personal access token to that host. A cursor that leaves the origin is rejected
+    /// (`nil`, which the callers surface as an invalid-cursor error) rather than followed.
     nonisolated func cursorURL(_ cursor: String) -> URL? {
         let trimmed = cursor.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmed, encodingInvalidCharacters: true) else { return nil }
-        guard url.scheme == nil else { return url }
+        guard let parsed = URL(string: trimmed, encodingInvalidCharacters: true) else { return nil }
 
-        return URL(string: url.relativeString, relativeTo: baseURL)?.absoluteURL
+        // A relative cursor resolves against `baseURL`, so it is in-origin by construction;
+        // an absolute one has to be checked.
+        let resolved = parsed.scheme == nil
+            ? URL(string: parsed.relativeString, relativeTo: baseURL)?.absoluteURL
+            : parsed
+        guard let resolved, Self.sameOrigin(resolved, baseURL) else { return nil }
+
+        return resolved
+    }
+
+    /// Whether two URLs share an origin — scheme, host, and port. Scheme and host are
+    /// case-insensitive per RFC 3986; the port falls back to the scheme's default so
+    /// `https://host` and `https://host:443` compare equal.
+    nonisolated static func sameOrigin(_ lhs: URL, _ rhs: URL) -> Bool {
+        func port(of url: URL) -> Int? {
+            url.port ?? (url.scheme?.lowercased() == "https" ? 443 : url.scheme?.lowercased() == "http" ? 80 : nil)
+        }
+
+        guard let leftHost = lhs.host(), let rightHost = rhs.host() else { return false }
+
+        return lhs.scheme?.lowercased() == rhs.scheme?.lowercased()
+            && leftHost.caseInsensitiveCompare(rightHost) == .orderedSame
+            && port(of: lhs) == port(of: rhs)
     }
 
     /// Trims `value` and returns `nil` for an empty/whitespace-only result, so blank
@@ -1039,9 +1098,26 @@ public struct HackerRankClient {
     }
 
     /// Percent-encodes an id for use as a single path segment.
+    ///
+    /// This is the **only** encoding applied to a path: the result is assembled into a URL by
+    /// ``url(path:query:)``, which does not re-encode. Sub-delimiters and `/` are escaped so
+    /// an id can never break out of its segment or be reinterpreted by the server.
     nonisolated static func pathSegment(_ value: String) -> String {
         var allowed = CharacterSet.urlPathAllowed
         allowed.remove(charactersIn: "/?#[]@!$&'()*+,;=")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
+    }
+
+    /// Percent-encodes a query-string name or value.
+    ///
+    /// `URLComponents.queryItems` escapes `&`, `=`, `#`, spaces, and non-ASCII, but leaves `+`
+    /// alone — and the API's Rack/Rails query parser decodes a literal `+` as a space, so
+    /// `C++` would be searched for as `C` followed by two spaces and a plus-addressed email
+    /// would lose its tag. `+` is escaped explicitly here, matching the exclusion
+    /// ``pathSegment(_:)`` already makes, so a query value survives the round trip verbatim.
+    nonisolated static func queryComponent(_ value: String) -> String {
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "+&=?#")
         return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 }

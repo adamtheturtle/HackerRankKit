@@ -18,7 +18,21 @@ import PaginatedRESTClient
 /// rather than failing the whole page, so one malformed item on a live account never breaks
 /// the entire list. The models are already resilient (every non-identifying field optional);
 /// this is the page-level backstop.
-public nonisolated struct HackerRankPage<Item: Decodable & Sendable>: PagedResponse {
+/// A value that may or may not carry an identity, letting ``HackerRankPage/identity(of:)``
+/// distinguish an item whose optional id is absent from one that has a real id. Without it,
+/// every id-less row would share the identity "`nil` wrapped in `AnyHashable`" and the
+/// transport's de-duplication would collapse them into a single row.
+private nonisolated protocol OptionalIdentity {
+    nonisolated var isAbsent: Bool { get }
+}
+
+extension Optional: OptionalIdentity {
+    fileprivate nonisolated var isAbsent: Bool {
+        self == nil
+    }
+}
+
+public nonisolated struct HackerRankPage<Item: Decodable & Sendable & Identifiable>: PagedResponse {
     public let data: [Item]
     public let next: String?
     /// The collection's total size from the envelope's `total` field, when present. Kept separate
@@ -50,5 +64,25 @@ public nonisolated struct HackerRankPage<Item: Decodable & Sendable>: PagedRespo
 
     public var total: Int? {
         nil
+    }
+
+    /// The page size the client asks these endpoints for — the API's documented maximum,
+    /// which is ``HackerRankClient/pageSize``. Every first-page request this client builds
+    /// sends `limit=\(HackerRankClient.pageSize)`, so the two are the same number by
+    /// definition and are sourced from one constant rather than restated here.
+    ///
+    /// The transport derives its parallel page count from this rather than from the first
+    /// response's item count, which the lenient decoder above can leave short.
+    public static var pageSize: Int {
+        HackerRankClient.pageSize
+    }
+
+    /// Each item's own `id`, so pages stitched by the transport de-duplicate rather than
+    /// dropping to the sequential walk. An item whose id is optional and absent has no stable
+    /// identity, so it reports `nil` instead of colliding with every other id-less row.
+    public static func identity(of item: Item) -> AnyHashable? {
+        if let optional = item.id as? any OptionalIdentity, optional.isAbsent { return nil }
+
+        return item.id
     }
 }

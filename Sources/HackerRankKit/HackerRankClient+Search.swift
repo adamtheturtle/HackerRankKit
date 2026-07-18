@@ -73,15 +73,13 @@ extension HackerRankClient {
             return url
         }
 
-        var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
-        components?.queryItems = [
+        // Built through `url(path:query:)` so the search term is percent-encoded by
+        // `queryComponent`, which — unlike `URLComponents` — escapes `+`. The API's
+        // Rack/Rails query parser turns a literal `+` into a space, so `C++` and
+        // plus-addressed emails would otherwise be searched for as something else.
+        return try url(path: path, query: [
             URLQueryItem(name: queryItemName, value: query),
             URLQueryItem(name: "limit", value: String(Self.pageSize))
-        ]
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the search URL.")
-        }
-
-        return url
+        ])
     }
 }
