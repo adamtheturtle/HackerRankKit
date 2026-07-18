@@ -19,9 +19,14 @@ extension HackerRankClient {
         let first = try await offsetUsersPage(path: path, offset: 0)
         var all = first.data
         let total = min(first.totalCount ?? all.count, maxUsers)
-        guard !all.isEmpty, all.count < total else { return all }
+        guard !all.isEmpty, total > Self.pageSize else { return all }
 
-        let offsets = Array(stride(from: all.count, to: total, by: Self.pageSize))
+        // Offsets step by the page size we *requested*, never by how many records decoded.
+        // `HackerRankPage` drops individually malformed rows, so `all.count` can be short of
+        // the page the server actually returned — and the server offsets by `limit`. Deriving
+        // the stride from the decoded count would shift every subsequent offset backwards and
+        // re-request records already held, duplicating ids in an `Identifiable` list.
+        let offsets = Array(stride(from: Self.pageSize, to: total, by: Self.pageSize))
         var byOffset: [Int: [User]] = [:]
         var pending = offsets[...]
         try await withThrowingTaskGroup(of: (Int, [User]).self) { group in
@@ -47,15 +52,10 @@ extension HackerRankClient {
 
     /// Fetches one users page at an explicit `offset` (for the parallel `allUsers` fan-out).
     private func offsetUsersPage(path: String, offset: Int) async throws -> HackerRankPage<User> {
-        var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
-        components?.queryItems = [
+        let url = try url(path: path, query: [
             URLQueryItem(name: "limit", value: String(Self.pageSize)),
             URLQueryItem(name: "offset", value: String(offset))
-        ]
-        guard let url = components?.url else {
-            throw HackerRankError.http(0, "Could not build the users page URL.")
-        }
-
+        ])
         return try await rest.performWithRetry(HackerRankPage<User>.self, request: rest.authorizedGET(url))
     }
 }

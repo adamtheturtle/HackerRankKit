@@ -1,13 +1,13 @@
 {
-  "originHash" : "3a17ad05c9c26a4624ee1ef7b860648b10517231121493bb3d070ef92683404b",
+  "originHash" : "8612e8ed56c3abf34b4abffce27a6dc0a722b12cf4f38dc34e99c51324da1cad",
   "pins" : [
     {
       "identity" : "paginatedrestclient",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/adamtheturtle/PaginatedRESTClient.git",
       "state" : {
-        "revision" : "e1a71374d7b01dfe223db509c561463e90723ba1",
-        "version" : "0.1.0"
+        "revision" : "5a98c0b23073c81ccf3b28e4b8d0d7f33d302519",
+        "version" : "0.2.0"
       }
     }
   ],
