@@ -157,7 +157,9 @@ struct MockServerTests {
         )
         #expect(questionOp.id == "q-written")
 
-        let updatedInterview = try await client.updateInterview(id: "i1", options: InterviewUpdateOptions(title: "Updated"))
+        let updatedInterview = try await client.updateInterview(
+            id: "i1", options: InterviewUpdateOptions(title: "Updated")
+        )
         #expect(updatedInterview.id == "i-created")
         let deletedInterview = try await client.deleteInterview(id: "i1")
         #expect(deletedInterview.status == "scheduled")

@@ -62,7 +62,9 @@ extension HackerRankClient {
         return Page(items: response.data, next: response.next, totalCount: response.totalCount)
     }
 
-    private func searchURL(path: String, queryItemName: String = "search", query: String, cursor: String?) throws -> URL {
+    private func searchURL(
+        path: String, queryItemName: String = "search", query: String, cursor: String?
+    ) throws -> URL {
         if let cursor {
             guard let url = cursorURL(cursor) else {
                 throw HackerRankError.http(0, "Invalid next-page URL: \(cursor)")

@@ -570,7 +570,9 @@ public struct HackerRankClient {
 
     /// One page of interview templates (`GET /interview_templates`).
     public func interviewTemplatesPage(after cursor: String? = nil) async throws -> Page<InterviewTemplate> {
-        try await page(HackerRankPage<InterviewTemplate>.self, path: "\(Self.apiV3)/interview_templates", cursor: cursor)
+        try await page(
+            HackerRankPage<InterviewTemplate>.self, path: "\(Self.apiV3)/interview_templates", cursor: cursor
+        )
     }
 
     /// Shows an interview template (`GET /interview_templates/{template_id}`).
@@ -619,7 +621,9 @@ public struct HackerRankClient {
     // MARK: Invite templates
 
     /// One page of invite templates (`GET /templates`), optionally filtered by access.
-    public func inviteTemplatesPage(after cursor: String? = nil, access: String? = nil) async throws -> Page<InviteTemplate> {
+    public func inviteTemplatesPage(
+        after cursor: String? = nil, access: String? = nil
+    ) async throws -> Page<InviteTemplate> {
         try await page(
             HackerRankPage<InviteTemplate>.self,
             path: "\(Self.apiV3)/templates",
@@ -668,7 +672,9 @@ public struct HackerRankClient {
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             options: options
         )
-        return try await rest.send(ATSInviteResult.self, method: "POST", path: "\(Self.apiV3)/ats/codescreen", body: body)
+        return try await rest.send(
+            ATSInviteResult.self, method: "POST", path: "\(Self.apiV3)/ats/codescreen", body: body
+        )
     }
 
     // MARK: SCIM provisioning

@@ -8,6 +8,11 @@
 
 import Foundation
 
+// The fixtures below are verbatim API payloads held in raw string literals. Wrapping the
+// JSON to fit a line limit would stop it matching what the service actually returns, and
+// a disable comment cannot be placed inside a string literal.
+// swiftlint:disable line_length
+
 /// The fake API's canned fixture data. Everything is immutable seed data, safe to read
 /// from any thread.
 public nonisolated enum MockFixtures {
@@ -363,3 +368,5 @@ public nonisolated enum MockFixtures {
     ],"next":null}
     """#
 }
+
+// swiftlint:enable line_length

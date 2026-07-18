@@ -22,13 +22,21 @@ public nonisolated enum HackerRankJSONValue: Codable, Sendable, Equatable {
 
     public nonisolated init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
-        if container.decodeNil() { self = .null }
-        else if let value = try? container.decode(Bool.self) { self = .bool(value) }
-        else if let value = try? container.decode(Int.self) { self = .int(value) }
-        else if let value = try? container.decode(Double.self) { self = .double(value) }
-        else if let value = try? container.decode(String.self) { self = .string(value) }
-        else if let value = try? container.decode([String: HackerRankJSONValue].self) { self = .object(value) }
-        else { self = .array(try container.decode([HackerRankJSONValue].self)) }
+        if container.decodeNil() {
+            self = .null
+        } else if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else if let value = try? container.decode(Int.self) {
+            self = .int(value)
+        } else if let value = try? container.decode(Double.self) {
+            self = .double(value)
+        } else if let value = try? container.decode(String.self) {
+            self = .string(value)
+        } else if let value = try? container.decode([String: HackerRankJSONValue].self) {
+            self = .object(value)
+        } else {
+            self = .array(try container.decode([HackerRankJSONValue].self))
+        }
     }
 
     public nonisolated func encode(to encoder: any Encoder) throws {
