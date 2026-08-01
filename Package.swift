@@ -27,7 +27,9 @@ let package = Package(
     name: "HackerRankKit",
     platforms: [.macOS(.v15), .iOS(.v18), .tvOS(.v18), .watchOS(.v11), .visionOS(.v2)],
     products: [
-        .library(name: "HackerRankKit", targets: ["HackerRankKit"]),
+        // The mock product also depends on this module. A dynamic core gives applications that
+        // link both products one shared copy of public type metadata (including error enums).
+        .library(name: "HackerRankKit", type: .dynamic, targets: ["HackerRankKit"]),
         .library(name: "HackerRankKitMock", targets: ["HackerRankKitMock"])
     ],
     dependencies: [
