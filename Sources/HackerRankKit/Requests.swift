@@ -1034,8 +1034,10 @@ public nonisolated struct TestWriteOptions: Sendable, Equatable {
         self.instructions = Self.nonBlank(instructions)
         self.startTime = Self.nonBlank(startTime)
         self.endTime = Self.nonBlank(endTime)
-        self.languages = Self.cleanList(languages)
-        self.tags = Self.cleanList(tags)
+        // nil means "leave unchanged"; an explicitly supplied empty collection means
+        // "clear this field" on assessment updates.
+        self.languages = Self.cleanClearableList(languages)
+        self.tags = Self.cleanClearableList(tags)
         self.library = Self.nonBlank(library)
         self.role = Self.nonBlank(role)
         self.skills = Self.cleanList(skills)
@@ -1048,6 +1050,10 @@ public nonisolated struct TestWriteOptions: Sendable, Equatable {
     private static func cleanList(_ values: [String]?) -> [String]? {
         let cleaned = values?.compactMap(nonBlank)
         return cleaned?.isEmpty == false ? cleaned : nil
+    }
+
+    private static func cleanClearableList(_ values: [String]?) -> [String]? {
+        values?.compactMap(nonBlank)
     }
 
     private static func nonBlank(_ value: String?) -> String? {

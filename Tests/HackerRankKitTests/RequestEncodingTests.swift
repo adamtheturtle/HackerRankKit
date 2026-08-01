@@ -149,7 +149,7 @@ struct RequestEncodingTests {
     }
 
     @Test
-    func `test write options omit blank strings and empty lists`() throws {
+    func `test write options preserve explicit language and tag clears`() throws {
         let request = UpdateTestRequest(
             name: "Backend Screen",
             options: TestWriteOptions(
@@ -165,10 +165,17 @@ struct RequestEncodingTests {
         let object = try encodedObject(request)
         #expect(object["instructions"] == nil)
         #expect(object["role"] == nil)
-        #expect(object["tags"] == nil)
+        #expect(object["tags"] as? [String] == [])
         #expect(object["languages"] as? [String] == ["python"])
         #expect(object["skills"] as? [String] == ["APIs"])
         #expect(object["questions"] as? [String] == ["q1"])
+
+        let clearObject = try encodedObject(UpdateTestRequest(
+            name: "Backend Screen",
+            options: TestWriteOptions(languages: [], tags: [" "])
+        ))
+        #expect(clearObject["languages"] as? [String] == [])
+        #expect(clearObject["tags"] as? [String] == [])
     }
 
     @Test
