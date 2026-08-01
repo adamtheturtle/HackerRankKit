@@ -247,6 +247,11 @@ struct RequestEncodingTests {
         #expect(object["accept_result_updates"] as? Bool == true)
         #expect(object["tags"] as? [String] == ["priority"])
         #expect((object["accommodations"] as? [String: Any])?["extra_time"] as? Int == 15)
+
+        let clearedTags = try encodedObject(UpdateCandidateRequest(
+            options: CandidateUpdateOptions(tags: [])
+        ))
+        #expect(clearedTags["tags"] as? [String] == [])
     }
 
     @Test

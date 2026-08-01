@@ -447,8 +447,9 @@ public nonisolated struct CandidateUpdateOptions: Sendable, Equatable {
         self.testResultURL = Self.nonBlank(testResultURL)
         self.webhookAuthentication = webhookAuthentication?.isEmpty == false ? webhookAuthentication : nil
         self.acceptResultUpdates = acceptResultUpdates
-        let cleanedTags = tags?.compactMap(Self.nonBlank)
-        self.tags = cleanedTags?.isEmpty == false ? cleanedTags : nil
+        // nil means "do not update tags"; an explicit empty array means "clear all
+        // tags" and must survive through encodeIfPresent.
+        self.tags = tags.map { $0.compactMap(Self.nonBlank) }
         self.accommodations = accommodations?.isEmpty == false ? accommodations : nil
     }
 
