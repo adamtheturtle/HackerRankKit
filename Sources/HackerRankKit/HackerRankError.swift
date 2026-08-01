@@ -15,7 +15,7 @@ import Foundation
 ///
 /// The ``HackerRankClient`` retries idempotent GET requests on the transient cases
 /// before surfacing one; see ``HackerRankClient``.
-public nonisolated enum HackerRankError: Error, CustomStringConvertible, Sendable {
+public nonisolated enum HackerRankError: Error, CustomNSError, CustomStringConvertible, Sendable {
     /// No personal access token was configured for the request.
     case missingAPIKey
     /// The server returned a non-success HTTP status, with the response body.
@@ -47,5 +47,23 @@ public nonisolated enum HackerRankError: Error, CustomStringConvertible, Sendabl
         if case .http(401, _) = self { return true }
         if case .http(403, _) = self { return true }
         return false
+    }
+
+    /// Stable metadata for consumers that receive this error across a static-library boundary.
+    /// HTTP failures use their status as the NSError code so callers need not rely on Swift enum
+    /// type identity when both the live and mock package products are linked into one process.
+    public static let errorDomain = "HackerRankKit.HackerRankError"
+
+    public var errorCode: Int {
+        switch self {
+        case .missingAPIKey: -1
+        case let .http(status, _): status
+        case .decode: -2
+        case let .network(error): error.errorCode
+        }
+    }
+
+    public var errorUserInfo: [String: Any] {
+        [NSLocalizedDescriptionKey: description]
     }
 }
