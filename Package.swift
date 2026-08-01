@@ -30,7 +30,7 @@ let package = Package(
         // The mock product also depends on this module. A dynamic core gives applications that
         // link both products one shared copy of public type metadata (including error enums).
         .library(name: "HackerRankKit", type: .dynamic, targets: ["HackerRankKit"]),
-        .library(name: "HackerRankKitMock", targets: ["HackerRankKitMock"])
+        .library(name: "HackerRankKitMock", type: .dynamic, targets: ["HackerRankKitMock"])
     ],
     dependencies: [
         .package(url: "https://github.com/adamtheturtle/PaginatedRESTClient.git", from: "0.2.0")
