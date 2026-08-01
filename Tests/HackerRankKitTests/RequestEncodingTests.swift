@@ -423,5 +423,11 @@ struct RequestEncodingTests {
         #expect(template["questions"] as? [String] == ["q1"])
         #expect(template["tags"] as? [String] == ["backend"])
         #expect((template["metadata"] as? [String: Any])?["source"] as? String == "api")
+
+        let clearedTemplate = try encodedObject(InterviewTemplateWriteRequest(
+            options: InterviewTemplateWriteOptions(title: "   ", description: "")
+        ))
+        #expect(clearedTemplate["title"] as? String == "")
+        #expect(clearedTemplate["description"] as? String == "")
     }
 }

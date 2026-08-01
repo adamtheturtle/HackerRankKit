@@ -1287,8 +1287,11 @@ public nonisolated struct InterviewTemplateWriteOptions: Sendable, Equatable {
         metadata: [String: HackerRankJSONValue]? = nil
     ) {
         self.name = Self.nonBlank(name)
-        self.title = Self.nonBlank(title)
-        self.description = Self.nonBlank(description)
+        // Empty optional text is meaningful for updates: the API uses it to clear an
+        // existing value. Keep nil as "not supplied", but preserve an explicit empty
+        // string after trimming so callers can express that operation.
+        self.title = title.map(Self.trimmed)
+        self.description = description.map(Self.trimmed)
         self.questions = Self.cleanList(questions)
         self.tags = Self.cleanList(tags)
         self.metadata = metadata?.isEmpty == false ? metadata : nil
@@ -1302,6 +1305,10 @@ public nonisolated struct InterviewTemplateWriteOptions: Sendable, Equatable {
     private static func nonBlank(_ value: String?) -> String? {
         let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
         return result?.isEmpty == false ? result : nil
+    }
+
+    private static func trimmed(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
