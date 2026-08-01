@@ -594,10 +594,12 @@ public nonisolated struct UserUpdateOptions: Sendable, Equatable {
         teamAdmin: Bool? = nil
     ) {
         self.firstName = Self.nonBlank(firstName)
-        self.lastName = Self.nonBlank(lastName)
-        self.country = Self.nonBlank(country)
+        // These optional profile fields support clearing. Preserve an explicitly
+        // supplied empty value while nil continues to mean "leave unchanged".
+        self.lastName = lastName.map(Self.trimmed)
+        self.country = country.map(Self.trimmed)
         self.role = Self.nonBlank(role)
-        self.phone = Self.nonBlank(phone)
+        self.phone = phone.map(Self.trimmed)
         self.questionsPermission = questionsPermission
         self.testsPermission = testsPermission
         self.interviewsPermission = interviewsPermission
@@ -613,6 +615,10 @@ public nonisolated struct UserUpdateOptions: Sendable, Equatable {
     private static func nonBlank(_ value: String?) -> String? {
         let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
         return result?.isEmpty == false ? result : nil
+    }
+
+    private static func trimmed(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 

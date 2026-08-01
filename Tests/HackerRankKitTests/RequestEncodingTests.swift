@@ -267,6 +267,15 @@ struct RequestEncodingTests {
         #expect(user["shared_candidates_permission"] as? Int == 2)
         #expect(user["company_admin"] as? Bool == true)
 
+        let clearedUserFields = try encodedObject(UpdateUserRequest(options: UserUpdateOptions(
+            lastName: "  ",
+            country: "",
+            phone: "\n"
+        )))
+        #expect(clearedUserFields["lastname"] as? String == "")
+        #expect(clearedUserFields["country"] as? String == "")
+        #expect(clearedUserFields["phone"] as? String == "")
+
         let team = try encodedObject(UpdateTeamRequest(options: TeamUpdateOptions(
             name: "Backend Hiring",
             recruiterCap: 5,
