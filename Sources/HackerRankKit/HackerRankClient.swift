@@ -1132,7 +1132,8 @@ public nonisolated struct Page<Item: Sendable>: Sendable {
 
     public init(items: [Item], next: String?, totalCount: Int? = nil) {
         self.items = items
-        self.next = next
+        let normalizedNext = next?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.next = normalizedNext?.isEmpty == false ? normalizedNext : nil
         self.totalCount = totalCount
     }
 }

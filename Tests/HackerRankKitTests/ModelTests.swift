@@ -43,6 +43,17 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `page normalizes empty terminal cursors`() {
+        let empty = Page(items: [1], next: "")
+        let whitespace = Page(items: [1], next: "  \n")
+        let continuation = Page(items: [1], next: "  https://example.com/next  ")
+
+        #expect(empty.next == nil)
+        #expect(whitespace.next == nil)
+        #expect(continuation.next == "https://example.com/next")
+    }
+
+    @Test
     func `user without email still decodes`() throws {
         let page = try decode(HackerRankPage<User>.self, #"{"data":[{"id":"u1"}],"next":null}"#)
         #expect(page.data.count == 1)
