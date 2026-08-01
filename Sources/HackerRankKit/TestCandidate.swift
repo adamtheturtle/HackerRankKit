@@ -5,6 +5,37 @@
 
 import Foundation
 
+/// HackerRank recruitment-pipeline values carried by the candidate `ats_state` field.
+///
+/// These are the stable values documented by HackerRank. Keep the wire model's raw
+/// integer for source compatibility; callers can validate or interpret it with
+/// `CandidateATSState(rawValue:)`.
+public nonisolated enum CandidateATSState: Int, CaseIterable, Codable, Hashable, Sendable {
+    case notSet = 0
+    case evaluationRequired = 1
+    case qualified = 2
+    case failed = 3
+    case phoneInterviewOne = 4
+    case phoneInterviewTwo = 5
+    case phoneInterviewThree = 6
+    case offerSent = 7
+    case offerNegotiation = 8
+    case offerAccepted = 9
+    case offerDeclined = 10
+    case onHold = 11
+    case phoneInterviewCleared = 12
+    case phoneInterviewFailed = 13
+    case technicalInterviewCleared = 14
+    case technicalInterviewFailed = 15
+    case humanResourcesInterviewCleared = 16
+    case humanResourcesInterviewFailed = 17
+    case phoneInterview = 18
+    case technicalInterview = 19
+    case humanResourcesInterview = 20
+    case hired = 21
+    case rejected = 22
+}
+
 /// A candidate associated with a HackerRank for Work test.
 ///
 /// Only the fields a read-only UI typically needs are modelled; `Decodable` ignores any

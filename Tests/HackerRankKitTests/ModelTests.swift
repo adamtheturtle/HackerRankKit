@@ -54,6 +54,16 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `candidate ATS states expose the documented wire contract`() {
+        #expect(CandidateATSState.allCases.map(\.rawValue) == Array(0 ... 22))
+        #expect(CandidateATSState(rawValue: 2) == .qualified)
+        #expect(CandidateATSState(rawValue: 21) == .hired)
+        #expect(CandidateATSState(rawValue: 22) == .rejected)
+        #expect(CandidateATSState(rawValue: -1) == nil)
+        #expect(CandidateATSState(rawValue: 23) == nil)
+    }
+
+    @Test
     func `user without email still decodes`() throws {
         let page = try decode(HackerRankPage<User>.self, #"{"data":[{"id":"u1"}],"next":null}"#)
         #expect(page.data.count == 1)
