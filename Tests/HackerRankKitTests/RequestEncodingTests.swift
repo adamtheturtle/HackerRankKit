@@ -286,6 +286,13 @@ struct RequestEncodingTests {
         #expect(team["recruiter_cap"] as? Int == 5)
         #expect(team["invite_as"] as? String == "Hiring Team")
         #expect(team["locations"] as? [String] == ["London"])
+
+        let clearedTeamCollections = try encodedObject(UpdateTeamRequest(options: TeamUpdateOptions(
+            locations: [],
+            departments: ["  "]
+        )))
+        #expect(clearedTeamCollections["locations"] as? [String] == [])
+        #expect(clearedTeamCollections["departments"] as? [String] == [])
     }
 
     @Test

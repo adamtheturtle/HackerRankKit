@@ -1113,13 +1113,13 @@ public nonisolated struct TeamUpdateOptions: Sendable, Equatable {
         self.recruiterCap = recruiterCap
         self.developerCap = developerCap
         self.inviteAs = Self.nonBlank(inviteAs)
-        self.locations = Self.cleanList(locations)
-        self.departments = Self.cleanList(departments)
+        // nil leaves the collection unchanged; an explicit empty array clears it.
+        self.locations = locations.map(Self.cleanedList)
+        self.departments = departments.map(Self.cleanedList)
     }
 
-    private static func cleanList(_ values: [String]?) -> [String]? {
-        let cleaned = values?.compactMap(nonBlank)
-        return cleaned?.isEmpty == false ? cleaned : nil
+    private static func cleanedList(_ values: [String]) -> [String] {
+        values.compactMap(nonBlank)
     }
 
     private static func nonBlank(_ value: String?) -> String? {
