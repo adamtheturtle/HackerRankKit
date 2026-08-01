@@ -207,7 +207,7 @@ struct RequestEncodingTests {
     }
 
     @Test
-    func `question update omits unset and blank metadata fields`() throws {
+    func `question update preserves explicit metadata clears`() throws {
         let request = UpdateQuestionRequest(
             name: nil,
             type: " ",
@@ -225,7 +225,7 @@ struct RequestEncodingTests {
         #expect(object["type"] == nil)
         #expect(object["status"] == nil)
         #expect(object["problem_statement"] == nil)
-        #expect(object["tags"] == nil)
+        #expect(object["tags"] as? [String] == [])
         #expect(object["languages"] as? [String] == ["python"])
         #expect(object["skills"] as? [String] == ["Algorithms"])
     }

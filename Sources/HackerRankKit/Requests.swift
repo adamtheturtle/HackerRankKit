@@ -729,8 +729,8 @@ public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
     }
 
     private static func cleanList(_ values: [String]?) -> [String]? {
-        let cleaned = values?.compactMap(nonBlank)
-        return cleaned?.isEmpty == false ? cleaned : nil
+        guard let values else { return nil }
+        return values.compactMap(nonBlank)
     }
 
     private static func nonBlank(_ value: String?) -> String? {
