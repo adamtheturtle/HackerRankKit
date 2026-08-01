@@ -64,6 +64,14 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `question lifecycle statuses expose the documented wire contract`() {
+        #expect(QuestionLifecycleStatus.allCases == [.active, .archived])
+        #expect(QuestionLifecycleStatus(rawValue: "active") == .active)
+        #expect(QuestionLifecycleStatus(rawValue: "archived") == .archived)
+        #expect(QuestionLifecycleStatus(rawValue: "published") == nil)
+    }
+
+    @Test
     func `user without email still decodes`() throws {
         let page = try decode(HackerRankPage<User>.self, #"{"data":[{"id":"u1"}],"next":null}"#)
         #expect(page.data.count == 1)

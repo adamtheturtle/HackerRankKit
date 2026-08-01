@@ -5,6 +5,12 @@
 
 import Foundation
 
+/// Lifecycle values documented by HackerRank for question resources and writes.
+public nonisolated enum QuestionLifecycleStatus: String, CaseIterable, Codable, Hashable, Sendable {
+    case active
+    case archived
+}
+
 /// A HackerRank for Work question.
 ///
 /// Only the fields a read-only UI typically needs are modelled; `Decodable` ignores any
