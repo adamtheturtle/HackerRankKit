@@ -231,6 +231,19 @@ struct RequestEncodingTests {
     }
 
     @Test
+    func `question update encodes explicit scalar clears as null`() throws {
+        let request = UpdateQuestionRequest(
+            name: nil,
+            type: nil,
+            options: QuestionWriteOptions(clearsRecommendedDuration: true, clearsMaxScore: true)
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["recommended_duration"] is NSNull)
+        #expect(object["max_score"] is NSNull)
+    }
+
+    @Test
     func `candidate update encodes documented optional fields`() throws {
         let request = UpdateCandidateRequest(
             options: CandidateUpdateOptions(

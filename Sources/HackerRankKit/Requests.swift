@@ -680,9 +680,17 @@ private nonisolated func encodeQuestionWriteBody(
     try container.encodeIfPresent(options.status, forKey: .status)
     try container.encodeIfPresent(options.languages, forKey: .languages)
     try container.encodeIfPresent(options.problemStatement, forKey: .problemStatement)
-    try container.encodeIfPresent(options.recommendedDuration, forKey: .recommendedDuration)
+    if options.clearsRecommendedDuration {
+        try container.encodeNil(forKey: .recommendedDuration)
+    } else {
+        try container.encodeIfPresent(options.recommendedDuration, forKey: .recommendedDuration)
+    }
     try container.encodeIfPresent(options.tags, forKey: .tags)
-    try container.encodeIfPresent(options.maxScore, forKey: .maxScore)
+    if options.clearsMaxScore {
+        try container.encodeNil(forKey: .maxScore)
+    } else {
+        try container.encodeIfPresent(options.maxScore, forKey: .maxScore)
+    }
     try container.encodeIfPresent(options.skills, forKey: .skills)
 }
 
@@ -703,10 +711,14 @@ public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
     public let problemStatement: String?
     /// Recommended solving duration in minutes.
     public let recommendedDuration: Int?
+    /// Whether an update explicitly clears the optional duration with JSON null.
+    public let clearsRecommendedDuration: Bool
     /// Tags to attach to the question.
     public let tags: [String]?
     /// Maximum achievable score.
     public let maxScore: Double?
+    /// Whether an update explicitly clears the optional score with JSON null.
+    public let clearsMaxScore: Bool
     /// Skills assessed by the question.
     public let skills: [String]?
 
@@ -717,14 +729,18 @@ public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
         recommendedDuration: Int? = nil,
         tags: [String]? = nil,
         maxScore: Double? = nil,
-        skills: [String]? = nil
+        skills: [String]? = nil,
+        clearsRecommendedDuration: Bool = false,
+        clearsMaxScore: Bool = false
     ) {
         self.status = Self.nonBlank(status)
         self.languages = Self.cleanList(languages)
         self.problemStatement = Self.nonBlank(problemStatement)
         self.recommendedDuration = recommendedDuration
+        self.clearsRecommendedDuration = clearsRecommendedDuration
         self.tags = Self.cleanList(tags)
         self.maxScore = maxScore
+        self.clearsMaxScore = clearsMaxScore
         self.skills = Self.cleanList(skills)
     }
 
