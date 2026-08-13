@@ -69,10 +69,18 @@ nonisolated enum MockResponses {
         if path.contains("/teams") && path.contains("/users") { return MockFixtures.teamMembership }
         if path.contains("/interview_templates") { return MockFixtures.interviewTemplate }
         if path.contains("/users") { return MockFixtures.createdUser }
-        if path.contains("/questions") { return MockFixtures.writtenQuestion }
+        if path.contains("/questions") {
+            return isQuestionOperation(path) ? MockFixtures.questionOperationResult : MockFixtures.writtenQuestion
+        }
         if path.contains("/teams") { return MockFixtures.createdTeam }
         if path.contains("/interviews") { return MockFixtures.createdInterview }
         return MockFixtures.createdTest
+    }
+
+    /// Whether a question write targets a codestub or testcase sub-resource. Those
+    /// endpoints echo a ``QuestionOperationResult`` status, not the question record.
+    private static func isQuestionOperation(_ path: String) -> Bool {
+        path.contains("/testcases") || path.contains("/custom_codestubs") || path.hasSuffix("/generate")
     }
 
     /// The `/tests` route: a single-test detail read for anything past the bare

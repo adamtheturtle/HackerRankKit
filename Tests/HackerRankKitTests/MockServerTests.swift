@@ -91,6 +91,47 @@ struct MockServerTests {
     }
 
     @Test
+    func `question codestub and testcase writes return an operation ack`() async throws {
+        let stubs = try await client.updateCustomCodeStubs(
+            questionID: "q1", stubs: [QuestionCodeStub(language: "swift", code: "func solve() {}")]
+        )
+        #expect(stubs.status == "ok")
+
+        let generated = try await client.generateCodeStubs(
+            questionID: "q1", options: CodeStubGenerationOptions(functionName: "twoSum", languages: ["swift"])
+        )
+        #expect(generated.id == "qop-1")
+
+        let added = try await client.addTestcase(
+            questionID: "q1",
+            options: QuestionTestcaseOptions(input: "input", output: "output", name: "Sample", score: 10)
+        )
+        #expect(added.id == "qop-1")
+        #expect(added.message == "Question operation completed")
+
+        let updated = try await client.updateTestcase(
+            questionID: "q1", testcaseID: "tc1", options: QuestionTestcaseOptions(score: 20)
+        )
+        #expect(updated.status == "ok")
+
+        let deleted = try await client.deleteTestcase(questionID: "q1", testcaseID: "tc1")
+        #expect(deleted.id == "qop-1")
+    }
+
+    @Test
+    func `interview template writes return the echoed template`() async throws {
+        let created = try await client.createInterviewTemplate(
+            options: InterviewTemplateWriteOptions(name: "Backend Template", title: "Backend Pairing")
+        )
+        #expect(created.id == 101)
+
+        let updated = try await client.updateInterviewTemplate(
+            id: 101, options: InterviewTemplateWriteOptions(name: "Renamed Template")
+        )
+        #expect(updated.name == "Backend Pairing")
+    }
+
+    @Test
     func `createUser with team ids returns the echoed record`() async throws {
         let created = try await client.createUser(
             email: "new@example.com", firstName: "New", role: "recruiter", teamIDs: ["tm1"]
@@ -150,12 +191,6 @@ struct MockServerTests {
     func `remaining documented gaps are routed by the mock server`() async throws {
         let globalCandidates = try await client.searchCandidates(query: "ada")
         #expect(globalCandidates.items.map(\.id) == ["c1"])
-
-        let questionOp = try await client.addTestcase(
-            questionID: "q1",
-            options: QuestionTestcaseOptions(input: "input", output: "output", name: "Sample", score: 10)
-        )
-        #expect(questionOp.id == "q-written")
 
         let updatedInterview = try await client.updateInterview(
             id: "i1", options: InterviewUpdateOptions(title: "Updated")

@@ -34,6 +34,12 @@ public nonisolated enum MockFixtures {
     {"id":"q-written","name":"New Question","type":"code"}
     """#
 
+    /// The acknowledgement returned for a question's codestub and testcase writes in the
+    /// demo. These endpoints answer with an operation status rather than the question.
+    static let questionOperationResult = #"""
+    {"id":"qop-1","status":"ok","message":"Question operation completed"}
+    """#
+
     /// The record returned when a team is created in the demo.
     static let createdTeam = #"""
     {"id":"tm-created","name":"New Team","owner":"u1"}
