@@ -15,6 +15,7 @@ import Foundation
 final nonisolated class RequestRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private var recorded: [URLRequest] = []
+    private var recordedBodies: [Data] = []
     private let handler: @Sendable (URL) -> (Int, Data)
 
     /// - Parameter handler: maps a requested URL to a status and a JSON body.
@@ -32,11 +33,40 @@ final nonisolated class RequestRecorder: @unchecked Sendable {
         requests.compactMap(\.url?.absoluteString)
     }
 
+    /// The JSON body of every request made so far, in order — empty for bodyless requests.
+    var bodies: [Data] {
+        lock.withLock { recordedBodies }
+    }
+
     fileprivate func record(_ request: URLRequest) -> (Int, Data) {
-        lock.withLock { recorded.append(request) }
+        // The body has to be drained here, while the protocol still holds the request:
+        // `URLRequest.httpBody` is nil by the time a request reaches a `URLProtocol`, and
+        // the stream it is carried in can only be read once.
+        let body = Self.body(of: request)
+        lock.withLock {
+            recorded.append(request)
+            recordedBodies.append(body)
+        }
         guard let url = request.url else { return (0, Data()) }
 
         return handler(url)
+    }
+
+    private static func body(of request: URLRequest) -> Data {
+        if let body = request.httpBody { return body }
+        guard let stream = request.httpBodyStream else { return Data() }
+
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            guard read > 0 else { break }
+
+            data.append(buffer, count: read)
+        }
+        return data
     }
 }
 
