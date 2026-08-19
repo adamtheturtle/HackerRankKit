@@ -131,7 +131,7 @@ struct WriteEndpointTests {
                 title: "Backend Pairing",
                 from: "2026-07-10T09:00:00Z",
                 to: "2026-07-10T10:00:00Z",
-                candidate: "ada@example.com",
+                candidate: InterviewCandidate(email: "ada@example.com"),
                 interviewers: ["ian@example.com"],
                 notes: "Discuss APIs"
             )
@@ -143,9 +143,45 @@ struct WriteEndpointTests {
         #expect(sent.body["title"] as? String == "Backend Pairing")
         #expect(sent.body["from"] as? String == "2026-07-10T09:00:00Z")
         #expect(sent.body["to"] as? String == "2026-07-10T10:00:00Z")
-        #expect(sent.body["candidate"] as? String == "ada@example.com")
+        #expect((sent.body["candidate"] as? [String: Any])?["email"] as? String == "ada@example.com")
         #expect(sent.body["interviewers"] as? [String] == ["ian@example.com"])
+        #expect(sent.body["replace_interviewers"] as? Bool == true)
         #expect(sent.body["notes"] as? String == "Discuss APIs")
+    }
+
+    @Test
+    func `scheduleInterview posts the documented create body`() async throws {
+        let (client, recorder) = recordedClient()
+        _ = try await client.scheduleInterview(
+            title: "Backend Pairing",
+            from: Date(timeIntervalSince1970: 1_780_000_000),
+            to: Date(timeIntervalSince1970: 1_780_003_600),
+            candidate: InterviewCandidate(email: "ada@example.com", name: "Ada Lovelace"),
+            interviewers: ["ian@example.com", " "],
+            notes: "Discuss APIs"
+        )
+
+        let sent = try sentRequest(recorder)
+        #expect(sent.method == "POST")
+        #expect(sent.path == "/x/api/v3/interviews")
+        #expect(sent.body["title"] as? String == "Backend Pairing")
+        #expect(sent.body["from"] is String)
+        // A scheduled interview can now carry its end time and its interviewers.
+        #expect(sent.body["to"] is String)
+        #expect(sent.body["interviewers"] as? [String] == ["ian@example.com"])
+        #expect((sent.body["candidate"] as? [String: Any])?["name"] as? String == "Ada Lovelace")
+    }
+
+    @Test
+    func `createQuickPad posts only the documented fields`() async throws {
+        let (client, recorder) = recordedClient()
+        _ = try await client.createQuickPad(title: "Pairing pad")
+
+        let sent = try sentRequest(recorder)
+        #expect(sent.method == "POST")
+        #expect(sent.path == "/x/api/v3/interviews")
+        // `quickpad` is not a property of the interview create schema.
+        #expect(sent.body as? [String: String] == ["title": "Pairing pad"])
     }
 
     @Test
