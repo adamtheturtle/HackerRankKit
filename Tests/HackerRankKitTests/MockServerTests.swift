@@ -234,10 +234,25 @@ struct MockServerTests {
 
         let user = try await client.user(id: "u1")
         #expect(user.email == "rhea@example.com")
+        #expect(user.phone == "+44 20 7946 0000")
+        #expect(user.timezone == "Europe/London")
+        #expect(user.questionsPermission == 2)
+        #expect(user.testsPermission == 2)
+        #expect(user.interviewsPermission == 1)
+        #expect(user.candidatesPermission == 2)
+        #expect(user.sharedQuestionsPermission == 1)
+        #expect(user.sharedTestsPermission == 1)
+        #expect(user.sharedInterviewsPermission == 0)
+        #expect(user.sharedCandidatesPermission == 1)
         let team = try await client.team(id: "tm1")
         #expect(team.name == "Backend Hiring")
+        #expect(team.recruiterCap == 5)
+        #expect(team.developerCap == 20)
+        #expect(team.inviteAs == "Example Recruiting")
         let membership = try await client.addTeamMember(teamID: "tm1", userID: "u1", license: "recruiter")
-        #expect(membership.email == "rhea@example.com")
+        // The membership response is the pair of ids, and nothing else.
+        #expect(membership.team == "tm1")
+        #expect(membership.user == "u1")
     }
 
     @Test

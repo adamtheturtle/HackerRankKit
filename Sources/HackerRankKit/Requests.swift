@@ -936,13 +936,6 @@ public nonisolated struct TeamUpdateOptions: Sendable, Equatable {
     }
 }
 
-/// The body sent when adding a team member. Snake-case to match the API; a blank role
-/// is omitted.
-nonisolated struct AddTeamMemberRequest: Encodable {
-    let email: String
-    let role: String?
-}
-
 /// An empty JSON body (`{}`) for a write whose parameters are all in the path — a team-member
 /// removal identifies the user in the URL.
 nonisolated struct EmptyBody: Encodable {}
@@ -954,11 +947,13 @@ public nonisolated struct CreatedTeam: Decodable, Sendable {
     public let name: String?
 }
 
-/// The record echoed back by a team-membership change. All-optional for the same
-/// reason as the other write echoes.
+/// A team membership (`UserTeamMembershipShow`): the two ids that make up the
+/// relationship. All-optional so a 2xx never fails to decode on an unexpected shape.
 public nonisolated struct TeamMembershipResult: Decodable, Sendable {
-    public let id: String?
-    public let email: String?
+    /// Identifier of the team.
+    public let team: String?
+    /// Identifier of the user who belongs to the team.
+    public let user: String?
 }
 
 /// An interview template returned by the interview-template endpoints.
