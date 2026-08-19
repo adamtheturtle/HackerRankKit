@@ -14,6 +14,36 @@ import Testing
 struct MockServerTests {
     private let client = HackerRankClient.mock(key: "test-\(UUID().uuidString)")
 
+    /// Sends a raw request through the mock's session, bypassing the typed client, so a
+    /// route the client would never build can still be asked for.
+    private func rawStatus(_ method: String, _ path: String) async throws -> Int {
+        var request = URLRequest(url: try #require(URL(string: "https://www.hackerrank.com\(path)")))
+        request.httpMethod = method
+        request.setValue("Bearer demo", forHTTPHeaderField: "Authorization")
+        let (_, response) = try await MockServer.session().data(for: request)
+        return try #require(response as? HTTPURLResponse).statusCode
+    }
+
+    @Test
+    func `an undeclared route is not a success`() async throws {
+        // A router that fell through to a generic 200 let typos, removed endpoints, and
+        // wrong methods pass here and fail only against the real API.
+        #expect(try await rawStatus("GET", "/x/api/v3/tets") == 404)
+        #expect(try await rawStatus("GET", "/x/api/v3/tests/t1/candidatez") == 404)
+        #expect(try await rawStatus("POST", "/x/api/v3/nonsense") == 404)
+    }
+
+    @Test
+    func `a real path with the wrong method is rejected as such`() async throws {
+        // `DELETE /questions/{id}` and `POST /teams/{id}/users` are exactly the routes the
+        // client used to call and the API does not expose.
+        #expect(try await rawStatus("DELETE", "/x/api/v3/questions/q1") == 405)
+        #expect(try await rawStatus("POST", "/x/api/v3/teams/tm1/users") == 405)
+        #expect(try await rawStatus("PATCH", "/x/api/v3/tests/t1") == 405)
+        // Testcases are written and deleted, never read.
+        #expect(try await rawStatus("GET", "/x/api/v3/questions/q1/testcases/tc1") == 405)
+    }
+
     @Test
     func `testsPage returns the seeded tests and a next cursor`() async throws {
         let page = try await client.testsPage()
