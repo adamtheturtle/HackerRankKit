@@ -165,9 +165,9 @@ struct WriteEndpointTests {
         #expect(sent.method == "POST")
         #expect(sent.path == "/x/api/v3/interviews")
         #expect(sent.body["title"] as? String == "Backend Pairing")
-        #expect(sent.body["from"] as? String != nil)
+        #expect(sent.body["from"] is String)
         // A scheduled interview can now carry its end time and its interviewers.
-        #expect(sent.body["to"] as? String != nil)
+        #expect(sent.body["to"] is String)
         #expect(sent.body["interviewers"] as? [String] == ["ian@example.com"])
         #expect((sent.body["candidate"] as? [String: Any])?["name"] as? String == "Ada Lovelace")
     }
