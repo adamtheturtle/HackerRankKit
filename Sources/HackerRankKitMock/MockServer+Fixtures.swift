@@ -229,9 +229,11 @@ public nonisolated enum MockFixtures {
     {"data":[
       {"id":"i1","status":"completed","url":"https://www.hackerrank.com/x/interviews/i1",
        "title":"Senior Backend — Pairing","created_at":"2026-05-05T13:00:00Z",
+       "from":"2026-05-05T13:00:00Z","to":"2026-05-05T14:00:00Z",
        "ended_at":"2026-05-05T14:00:00Z","thumbs_up":1,"feedback":"Strong system design.",
        "report_url":"https://www.hackerrank.com/x/interviews/i1/report"},
       {"id":"i2","status":"scheduled","url":"https://www.hackerrank.com/x/interviews/i2",
+       "from":"2026-05-12T16:00:00Z","to":"2026-05-12T17:00:00Z",
        "title":"Frontend — Live Coding","created_at":"2026-05-12T16:00:00Z"}
     ],"next":null}
     """#
@@ -246,22 +248,23 @@ public nonisolated enum MockFixtures {
      "from":"2026-05-05T13:00:00Z","to":"2026-05-05T14:00:00Z",
      "resume_url":"https://www.hackerrank.com/x/interviews/i1/resume",
      "result_url":"https://www.hackerrank.com/x/interviews/i1/result",
-     "user":{"firstname":"Rhea","lastname":"Recruiter","email":"rhea@example.com"},
+     "user":4821,
      "candidate":{"firstname":"Ada","lastname":"Lovelace","email":"ada@example.com"},
      "interviewers":[{"firstname":"Ian","lastname":"Interviewer","email":"ian@example.com"},
                      {"firstname":"Rhea","lastname":"Recruiter","email":"rhea@example.com"}]}
     """#
 
     /// The conversation transcript. Deterministic demo dialogue — no real personal data;
-    /// the pad's source code is not part of the transcript.
+    /// the pad's source code is not part of the transcript. Timestamps are epoch
+    /// **milliseconds**, the 13-digit values the API actually returns.
     static let interviewTranscript = #"""
     {"messages":[
       {"messageId":"m1","author":"Ian Interviewer","email":"ian@example.com","candidate":false,
-       "timestamp":1746450000,"text":"Welcome! Let's start with a brief warm-up question."},
+       "timestamp":1746450000000,"text":"Welcome! Let's start with a brief warm-up question."},
       {"messageId":"m2","author":"Ada Lovelace","email":"ada@example.com","candidate":true,
-       "timestamp":1746450060,"text":"Sounds good — I'm ready when you are."},
+       "timestamp":1746450060000,"text":"Sounds good — I'm ready when you are."},
       {"messageId":"m3","author":"Ian Interviewer","email":"ian@example.com","candidate":false,
-       "timestamp":1746450120,"text":"Great. Can you walk me through your approach?"}
+       "timestamp":1746450120000,"text":"Great. Can you walk me through your approach?"}
     ]}
     """#
 
@@ -435,11 +438,11 @@ public nonisolated enum MockFixtures {
     static let auditLog = #"""
     {"data":[
       {"source_id":"t1","source_type":"test","action":"update",
-       "user":{"firstname":"Rhea","lastname":"Recruiter","email":"rhea@example.com"},
+       "user":4821,
        "modified_fields":["name","cutoff_score"],"ip_address":"203.0.113.7",
        "created_at":"2026-06-20T09:15:00Z"},
       {"source_id":"u3","source_type":"user","action":"create",
-       "user":{"firstname":"Rhea","lastname":"Recruiter","email":"rhea@example.com"},
+       "user":4821,
        "modified_fields":["email","role"],"ip_address":"203.0.113.7",
        "created_at":"2026-06-19T16:42:00Z"},
       {"source_id":1024,"source_type":"interview","action":"delete",
