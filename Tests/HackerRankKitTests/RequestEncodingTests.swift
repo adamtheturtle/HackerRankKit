@@ -27,53 +27,65 @@ struct RequestEncodingTests {
         #expect(object["email"] as? String == "ada@example.com")
         #expect(object["send_email"] as? Bool == true)
         #expect(object["full_name"] == nil)
-        #expect(object["valid_until"] == nil)
+        #expect(object["invite_valid_to"] == nil)
         #expect(object.count == 2)
     }
 
     @Test
-    func `richer candidate invite encodes snake case optional fields`() throws {
+    func `richer candidate invite encodes the schema's field names`() throws {
         let request = InviteCandidateRequest(
             email: "ada@example.com",
             fullName: "Ada Lovelace",
             sendEmail: false,
             options: CandidateInviteOptions(
-                validFrom: "2026-07-10T09:00:00Z",
-                validUntil: "2026-07-17T09:00:00Z",
-                emailSubject: "Welcome",
-                emailMessage: "Please take this screen.",
-                templateID: "template-1",
+                inviteValidFrom: "2026-07-10T09:00:00Z",
+                inviteValidTo: "2026-07-17T09:00:00Z",
+                subject: "Welcome",
+                message: "Please take this screen.",
+                template: "template-1",
                 evaluatorEmail: "reviewer@example.com",
-                finishURL: "https://example.com/finish",
-                resultURL: "https://example.com/result",
-                notifyResultUpdate: true,
+                testFinishURL: "https://example.com/finish",
+                testResultURL: "https://example.com/result",
+                webhookAuthentication: .bearerToken("s3cret"),
+                acceptResultUpdates: true,
                 tags: ["onsite", "priority"],
                 force: true,
-                allowReattempt: false,
-                additionalTime: 15,
-                atsCandidateID: "candidate-123",
-                atsRequisitionID: "req-456"
+                forceReattempt: false,
+                accommodations: CandidateAccommodations(additionalTimePercent: 25)
             )
         )
 
         let object = try encodedObject(request)
         #expect(object["full_name"] as? String == "Ada Lovelace")
         #expect(object["send_email"] as? Bool == false)
-        #expect(object["valid_from"] as? String == "2026-07-10T09:00:00Z")
-        #expect(object["valid_until"] as? String == "2026-07-17T09:00:00Z")
-        #expect(object["email_subject"] as? String == "Welcome")
-        #expect(object["email_message"] as? String == "Please take this screen.")
-        #expect(object["template_id"] as? String == "template-1")
+        #expect(object["invite_valid_from"] as? String == "2026-07-10T09:00:00Z")
+        #expect(object["invite_valid_to"] as? String == "2026-07-17T09:00:00Z")
+        #expect(object["subject"] as? String == "Welcome")
+        #expect(object["message"] as? String == "Please take this screen.")
+        #expect(object["template"] as? String == "template-1")
         #expect(object["evaluator_email"] as? String == "reviewer@example.com")
-        #expect(object["finish_url"] as? String == "https://example.com/finish")
-        #expect(object["result_url"] as? String == "https://example.com/result")
-        #expect(object["notify_result_update"] as? Bool == true)
+        #expect(object["test_finish_url"] as? String == "https://example.com/finish")
+        #expect(object["test_result_url"] as? String == "https://example.com/result")
+        #expect(object["accept_result_updates"] as? Bool == true)
         #expect(object["tags"] as? [String] == ["onsite", "priority"])
         #expect(object["force"] as? Bool == true)
-        #expect(object["allow_reattempt"] as? Bool == false)
-        #expect(object["additional_time"] as? Int == 15)
-        #expect(object["ats_candidate_id"] as? String == "candidate-123")
-        #expect(object["ats_requisition_id"] as? String == "req-456")
+        #expect(object["force_reattempt"] as? Bool == false)
+
+        // The webhook the results are posted to must carry its authentication.
+        let authentication = try #require(object["webhook_authentication"] as? [String: Any])
+        #expect(authentication["type"] as? String == "bearer_token")
+        #expect((authentication["data"] as? [String: Any])?["token"] as? String == "s3cret")
+
+        // Additional time is a percentage of the test duration, nested in accommodations.
+        let accommodations = try #require(object["accommodations"] as? [String: Any])
+        #expect(accommodations["additional_time_percent"] as? Int == 25)
+
+        // None of the keys the schema does not define are sent.
+        for absent in ["valid_from", "valid_until", "email_subject", "email_message", "template_id",
+                       "finish_url", "result_url", "notify_result_update", "allow_reattempt",
+                       "additional_time", "ats_candidate_id", "ats_requisition_id"] {
+            #expect(object[absent] == nil, "\(absent) is not a documented invite field")
+        }
     }
 
     @Test
@@ -83,17 +95,17 @@ struct RequestEncodingTests {
             fullName: nil,
             sendEmail: true,
             options: CandidateInviteOptions(
-                validUntil: "   ",
-                emailSubject: "",
-                tags: ["onsite", " ", ""],
-                atsCandidateID: "\n"
+                inviteValidTo: "   ",
+                subject: "",
+                template: "\n",
+                tags: ["onsite", " ", ""]
             )
         )
 
         let object = try encodedObject(request)
-        #expect(object["valid_until"] == nil)
-        #expect(object["email_subject"] == nil)
-        #expect(object["ats_candidate_id"] == nil)
+        #expect(object["invite_valid_to"] == nil)
+        #expect(object["subject"] == nil)
+        #expect(object["template"] == nil)
         #expect(object["tags"] as? [String] == ["onsite"])
     }
 

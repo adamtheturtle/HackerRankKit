@@ -53,195 +53,49 @@ public nonisolated enum HackerRankJSONValue: Codable, Sendable, Hashable {
     }
 }
 
-/// A SCIM list response from the legacy `/Users` and `/Groups` provisioning endpoints.
-public nonisolated struct SCIMListResponse<Item: Decodable & Sendable>: Decodable, Sendable {
-    public let resources: [Item]
-    public let totalResults: Int?
-    public let startIndex: Int?
-    public let itemsPerPage: Int?
+/// Authentication for a candidate result webhook (the schema's `WebhookAuthentication`).
+///
+/// HackerRank requires this whenever a result URL is supplied, so a webhook is never
+/// configured without a way for the receiver to verify the caller.
+public nonisolated struct WebhookAuthentication: Sendable, Equatable, Encodable {
+    /// The authentication scheme, e.g. `bearer_token` or `basic_auth`.
+    public let type: String
+    /// The scheme's data — `{"token": "..."}` for `bearer_token`,
+    /// `{"username": "...", "password": "..."}` for `basic_auth`.
+    public let data: [String: HackerRankJSONValue]
+
+    public init(type: String, data: [String: HackerRankJSONValue]) {
+        self.type = type.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.data = data
+    }
+
+    /// Bearer-token authentication, the common case.
+    public static func bearerToken(_ token: String) -> Self {
+        Self(type: "bearer_token", data: ["token": .string(token)])
+    }
+
+    /// HTTP basic authentication.
+    public static func basicAuth(username: String, password: String) -> Self {
+        Self(type: "basic_auth", data: ["username": .string(username), "password": .string(password)])
+    }
+}
+
+/// Accessibility accommodations granted to a candidate (the schema's
+/// `CandidateAccommodations`).
+///
+/// Additional time is expressed as a **percentage of the test's duration**, not as a
+/// number of minutes: the same accommodation then means the same thing on a 30-minute
+/// screen and a 3-hour take-home.
+public nonisolated struct CandidateAccommodations: Sendable, Equatable, Encodable {
+    /// Extra time as a percentage of the test duration. The API requires a value above 0.
+    public let additionalTimePercent: Int?
 
     enum CodingKeys: String, CodingKey {
-        case resources = "Resources"
-        case totalResults
-        case startIndex
-        case itemsPerPage
-        case data
+        case additionalTimePercent = "additional_time_percent"
     }
 
-    public nonisolated init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        // Decoded **leniently**, like `HackerRankPage`: the `try?` has to sit inside the array
-        // so a single malformed row (a numeric `id` where `SCIMUser.id` is a `String?`, say) is
-        // dropped on its own. Wrapping the whole array instead discards every good row too, so
-        // a fully populated directory silently reads as empty.
-        resources = (try? container.decode([LenientElement<Item>].self, forKey: .resources))?.compactMap(\.value)
-            ?? ((try? container.decode([LenientElement<Item>].self, forKey: .data))?.compactMap(\.value) ?? [])
-        totalResults = try? container.decodeIfPresent(Int.self, forKey: .totalResults)
-        startIndex = try? container.decodeIfPresent(Int.self, forKey: .startIndex)
-        itemsPerPage = try? container.decodeIfPresent(Int.self, forKey: .itemsPerPage)
-    }
-}
-
-/// A user from the legacy SCIM `/Users` provisioning endpoints.
-public nonisolated struct SCIMUser: Decodable, Identifiable, Sendable {
-    public let id: String?
-    public let userName: String?
-    public let active: Bool?
-    public let role: String?
-    public let teamAdmin: Bool?
-    public let companyAdmin: Bool?
-    public let name: [String: HackerRankJSONValue]?
-    public let emails: [HackerRankJSONValue]?
-    public let schemas: [String]?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case userName
-        case active
-        case role
-        case teamAdmin = "team_admin"
-        case companyAdmin = "company_admin"
-        case name
-        case emails
-        case schemas
-    }
-}
-
-/// A group/team from the legacy SCIM `/Groups` provisioning endpoints.
-public nonisolated struct SCIMGroup: Decodable, Identifiable, Sendable {
-    public let id: String?
-    public let displayName: String?
-    public let members: [HackerRankJSONValue]?
-    public let schemas: [String]?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case displayName
-        case misspelledDisplayName = "diplayName"
-        case members
-        case schemas
-    }
-
-    public nonisolated init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try? container.decodeIfPresent(String.self, forKey: .id)
-        displayName = (try? container.decodeIfPresent(String.self, forKey: .displayName))
-            ?? (try? container.decodeIfPresent(String.self, forKey: .misspelledDisplayName))
-        members = try? container.decodeIfPresent([HackerRankJSONValue].self, forKey: .members)
-        schemas = try? container.decodeIfPresent([String].self, forKey: .schemas)
-    }
-}
-
-/// The body sent when creating or replacing a legacy SCIM user.
-public nonisolated struct SCIMUserWriteRequest: Encodable, Sendable, Equatable {
-    public let userName: String?
-    public let active: Bool?
-    public let role: String?
-    public let teamAdmin: Bool?
-    public let companyAdmin: Bool?
-    public let name: [String: HackerRankJSONValue]?
-    public let emails: [HackerRankJSONValue]?
-    public let schemas: [String]?
-
-    enum CodingKeys: String, CodingKey {
-        case userName
-        case active
-        case role
-        case teamAdmin = "team_admin"
-        case companyAdmin = "company_admin"
-        case name
-        case emails
-        case schemas
-    }
-
-    public init(
-        userName: String? = nil,
-        active: Bool? = nil,
-        role: String? = nil,
-        teamAdmin: Bool? = nil,
-        companyAdmin: Bool? = nil,
-        name: [String: HackerRankJSONValue]? = nil,
-        emails: [HackerRankJSONValue]? = nil,
-        schemas: [String]? = nil
-    ) {
-        self.userName = Self.nonBlank(userName)
-        self.active = active
-        self.role = Self.nonBlank(role)
-        self.teamAdmin = teamAdmin
-        self.companyAdmin = companyAdmin
-        self.name = name?.isEmpty == false ? name : nil
-        self.emails = emails?.isEmpty == false ? emails : nil
-        self.schemas = Self.cleanList(schemas)
-    }
-
-    private static func cleanList(_ values: [String]?) -> [String]? {
-        let cleaned = values?.compactMap(nonBlank)
-        return cleaned?.isEmpty == false ? cleaned : nil
-    }
-
-    private static func nonBlank(_ value: String?) -> String? {
-        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result?.isEmpty == false ? result : nil
-    }
-}
-
-/// The body sent when creating or replacing a legacy SCIM group.
-public nonisolated struct SCIMGroupWriteRequest: Encodable, Sendable, Equatable {
-    public let displayName: String?
-    public let members: [HackerRankJSONValue]?
-    public let schemas: [String]?
-
-    public init(
-        displayName: String? = nil,
-        members: [HackerRankJSONValue]? = nil,
-        schemas: [String]? = nil
-    ) {
-        self.displayName = Self.nonBlank(displayName)
-        self.members = members?.isEmpty == false ? members : nil
-        self.schemas = Self.cleanList(schemas)
-    }
-
-    private static func cleanList(_ values: [String]?) -> [String]? {
-        let cleaned = values?.compactMap(nonBlank)
-        return cleaned?.isEmpty == false ? cleaned : nil
-    }
-
-    private static func nonBlank(_ value: String?) -> String? {
-        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result?.isEmpty == false ? result : nil
-    }
-}
-
-/// The body sent for legacy SCIM PATCH operations.
-public nonisolated struct SCIMPatchRequest: Encodable, Sendable, Equatable {
-    public let schemas: [String]?
-    public let operations: [SCIMPatchOperation]
-
-    enum CodingKeys: String, CodingKey {
-        case schemas
-        case operations = "Operations"
-    }
-
-    public init(
-        operations: [SCIMPatchOperation],
-        schemas: [String]? = ["urn:ietf:params:scim:api:messages:2.0:PatchOp"]
-    ) {
-        self.operations = operations
-        self.schemas = schemas?.isEmpty == false ? schemas : nil
-    }
-}
-
-/// One operation in a legacy SCIM PATCH request.
-public nonisolated struct SCIMPatchOperation: Encodable, Sendable, Equatable {
-    public let op: String
-    public let path: String?
-    public let value: HackerRankJSONValue?
-
-    public init(op: String, path: String? = nil, value: HackerRankJSONValue? = nil) {
-        self.op = op.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedPath = path?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.path = trimmedPath?.isEmpty == false ? trimmedPath : nil
-        self.value = value
+    public init(additionalTimePercent: Int? = nil) {
+        self.additionalTimePercent = additionalTimePercent
     }
 }
 
@@ -257,21 +111,20 @@ nonisolated struct InviteCandidateRequest: Encodable {
         case email
         case fullName = "full_name"
         case sendEmail = "send_email"
-        case validFrom = "valid_from"
-        case validUntil = "valid_until"
-        case emailSubject = "email_subject"
-        case emailMessage = "email_message"
-        case templateID = "template_id"
+        case inviteValidFrom = "invite_valid_from"
+        case inviteValidTo = "invite_valid_to"
+        case subject
+        case message
+        case template
         case evaluatorEmail = "evaluator_email"
-        case finishURL = "finish_url"
-        case resultURL = "result_url"
-        case notifyResultUpdate = "notify_result_update"
+        case testFinishURL = "test_finish_url"
+        case testResultURL = "test_result_url"
+        case webhookAuthentication = "webhook_authentication"
+        case acceptResultUpdates = "accept_result_updates"
         case tags
         case force
-        case allowReattempt = "allow_reattempt"
-        case additionalTime = "additional_time"
-        case atsCandidateID = "ats_candidate_id"
-        case atsRequisitionID = "ats_requisition_id"
+        case forceReattempt = "force_reattempt"
+        case accommodations
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -279,91 +132,91 @@ nonisolated struct InviteCandidateRequest: Encodable {
         try container.encode(email, forKey: .email)
         try container.encodeIfPresent(fullName, forKey: .fullName)
         try container.encode(sendEmail, forKey: .sendEmail)
-        try container.encodeIfPresent(options.validFrom, forKey: .validFrom)
-        try container.encodeIfPresent(options.validUntil, forKey: .validUntil)
-        try container.encodeIfPresent(options.emailSubject, forKey: .emailSubject)
-        try container.encodeIfPresent(options.emailMessage, forKey: .emailMessage)
-        try container.encodeIfPresent(options.templateID, forKey: .templateID)
+        try container.encodeIfPresent(options.inviteValidFrom, forKey: .inviteValidFrom)
+        try container.encodeIfPresent(options.inviteValidTo, forKey: .inviteValidTo)
+        try container.encodeIfPresent(options.subject, forKey: .subject)
+        try container.encodeIfPresent(options.message, forKey: .message)
+        try container.encodeIfPresent(options.template, forKey: .template)
         try container.encodeIfPresent(options.evaluatorEmail, forKey: .evaluatorEmail)
-        try container.encodeIfPresent(options.finishURL, forKey: .finishURL)
-        try container.encodeIfPresent(options.resultURL, forKey: .resultURL)
-        try container.encodeIfPresent(options.notifyResultUpdate, forKey: .notifyResultUpdate)
+        try container.encodeIfPresent(options.testFinishURL, forKey: .testFinishURL)
+        try container.encodeIfPresent(options.testResultURL, forKey: .testResultURL)
+        try container.encodeIfPresent(options.webhookAuthentication, forKey: .webhookAuthentication)
+        try container.encodeIfPresent(options.acceptResultUpdates, forKey: .acceptResultUpdates)
         try container.encodeIfPresent(options.tags, forKey: .tags)
         try container.encodeIfPresent(options.force, forKey: .force)
-        try container.encodeIfPresent(options.allowReattempt, forKey: .allowReattempt)
-        try container.encodeIfPresent(options.additionalTime, forKey: .additionalTime)
-        try container.encodeIfPresent(options.atsCandidateID, forKey: .atsCandidateID)
-        try container.encodeIfPresent(options.atsRequisitionID, forKey: .atsRequisitionID)
+        try container.encodeIfPresent(options.forceReattempt, forKey: .forceReattempt)
+        try container.encodeIfPresent(options.accommodations, forKey: .accommodations)
     }
 }
 
 /// Optional fields for a candidate invite. Values are omitted from the request when unset,
 /// so callers can opt into richer API support without changing the minimal invite path.
+///
+/// Every field here is one the `TestCandidateCreate` schema defines. Options that named a
+/// key the schema does not have looked like they configured an invite while the server
+/// ignored them.
 public nonisolated struct CandidateInviteOptions: Sendable, Equatable {
     /// ISO-8601 time before which the invite should not be usable.
-    public let validFrom: String?
+    public let inviteValidFrom: String?
     /// ISO-8601 time after which the invite should expire.
-    public let validUntil: String?
-    /// Custom invitation email subject.
-    public let emailSubject: String?
-    /// Custom invitation email body/message.
-    public let emailMessage: String?
-    /// Invitation email template identifier.
-    public let templateID: String?
+    public let inviteValidTo: String?
+    /// Subject of the invitation email.
+    public let subject: String?
+    /// Custom message prepended to the invitation email body.
+    public let message: String?
+    /// Identifier of the invitation template to use.
+    public let template: String?
     /// Evaluator email address assigned to the invite.
     public let evaluatorEmail: String?
-    /// URL the candidate is sent to after finishing.
-    public let finishURL: String?
-    /// URL for downstream result/report callbacks or redirects.
-    public let resultURL: String?
-    /// Whether to notify downstream systems when results update.
-    public let notifyResultUpdate: Bool?
+    /// URL the candidate is redirected to after finishing the test.
+    public let testFinishURL: String?
+    /// Webhook URL the candidate's report is posted to.
+    public let testResultURL: String?
+    /// Authentication for ``testResultURL``. The API requires it whenever a result URL is
+    /// set, so an invite that configures the webhook must configure this too.
+    public let webhookAuthentication: WebhookAuthentication?
+    /// Whether score and status updates are sent to ``testResultURL``.
+    public let acceptResultUpdates: Bool?
     /// Tags to attach to the candidate invite.
     public let tags: [String]?
-    /// Whether to force creation when the API supports it.
+    /// Whether to email a candidate who has already been invited.
     public let force: Bool?
-    /// Whether the candidate is allowed to reattempt.
-    public let allowReattempt: Bool?
-    /// Additional time accommodation, in minutes.
-    public let additionalTime: Int?
-    /// External ATS candidate identifier.
-    public let atsCandidateID: String?
-    /// External ATS requisition/job identifier.
-    public let atsRequisitionID: String?
+    /// Whether to re-invite a candidate who has already attempted the test.
+    public let forceReattempt: Bool?
+    /// Accessibility accommodations for the candidate.
+    public let accommodations: CandidateAccommodations?
 
     public init(
-        validFrom: String? = nil,
-        validUntil: String? = nil,
-        emailSubject: String? = nil,
-        emailMessage: String? = nil,
-        templateID: String? = nil,
+        inviteValidFrom: String? = nil,
+        inviteValidTo: String? = nil,
+        subject: String? = nil,
+        message: String? = nil,
+        template: String? = nil,
         evaluatorEmail: String? = nil,
-        finishURL: String? = nil,
-        resultURL: String? = nil,
-        notifyResultUpdate: Bool? = nil,
+        testFinishURL: String? = nil,
+        testResultURL: String? = nil,
+        webhookAuthentication: WebhookAuthentication? = nil,
+        acceptResultUpdates: Bool? = nil,
         tags: [String]? = nil,
         force: Bool? = nil,
-        allowReattempt: Bool? = nil,
-        additionalTime: Int? = nil,
-        atsCandidateID: String? = nil,
-        atsRequisitionID: String? = nil
+        forceReattempt: Bool? = nil,
+        accommodations: CandidateAccommodations? = nil
     ) {
-        self.validFrom = Self.nonBlank(validFrom)
-        self.validUntil = Self.nonBlank(validUntil)
-        self.emailSubject = Self.nonBlank(emailSubject)
-        self.emailMessage = Self.nonBlank(emailMessage)
-        self.templateID = Self.nonBlank(templateID)
+        self.inviteValidFrom = Self.nonBlank(inviteValidFrom)
+        self.inviteValidTo = Self.nonBlank(inviteValidTo)
+        self.subject = Self.nonBlank(subject)
+        self.message = Self.nonBlank(message)
+        self.template = Self.nonBlank(template)
         self.evaluatorEmail = Self.nonBlank(evaluatorEmail)
-        self.finishURL = Self.nonBlank(finishURL)
-        self.resultURL = Self.nonBlank(resultURL)
-        self.notifyResultUpdate = notifyResultUpdate
+        self.testFinishURL = Self.nonBlank(testFinishURL)
+        self.testResultURL = Self.nonBlank(testResultURL)
+        self.webhookAuthentication = webhookAuthentication
+        self.acceptResultUpdates = acceptResultUpdates
         let cleanedTags = tags?.compactMap(Self.nonBlank)
         self.tags = cleanedTags?.isEmpty == false ? cleanedTags : nil
         self.force = force
-        self.allowReattempt = allowReattempt
-        self.additionalTime = additionalTime
-        self.atsCandidateID = Self.nonBlank(atsCandidateID)
-        self.atsRequisitionID = Self.nonBlank(atsRequisitionID)
+        self.forceReattempt = forceReattempt
+        self.accommodations = accommodations
     }
 
     private static func nonBlank(_ value: String?) -> String? {
