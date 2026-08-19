@@ -880,23 +880,11 @@ public struct HackerRankClient {
         return try await send(CreatedTeam.self, method: "POST", path: "\(Self.apiV3)/teams", body: body)
     }
 
-    /// Adds a member to a team (`POST /teams/{id}/users`).
-    @discardableResult
-    public func addTeamMember(teamID: String, email: String, role: String? = nil) async throws
-        -> TeamMembershipResult {
-        let body = AddTeamMemberRequest(
-            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
-            role: Self.nonBlank(role)
-        )
-        return try await send(
-            TeamMembershipResult.self,
-            method: "POST",
-            path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users",
-            body: body
-        )
-    }
-
     /// Adds an existing user to a team (`POST /teams/{team_id}/users/{user_id}?license=`).
+    ///
+    /// Membership is granted to a user who already exists. There is no by-email collection
+    /// POST: create the user with ``createUser(email:firstName:lastName:role:teamIDs:)``
+    /// first, which takes the teams to place them in.
     @discardableResult
     public func addTeamMember(teamID: String, userID: String, license: String? = nil) async throws
         -> TeamMembershipResult {
