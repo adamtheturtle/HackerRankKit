@@ -18,6 +18,22 @@ nonisolated struct LenientElement<Wrapped: Decodable>: Decodable {
     let value: Wrapped?
 
     init(from decoder: any Decoder) {
-        value = try? decoder.singleValueContainer().decode(Wrapped.self)
+        do {
+            value = try decoder.singleValueContainer().decode(Wrapped.self)
+        } catch {
+            // Losing a whole record is data loss, not the absent optional field that
+            // `loggedDecodeIfPresent` reports at debug level: without this, a page that
+            // dropped half its rows looked exactly like a page that was half full. The
+            // coding path names the element (e.g. `data.Index 3`) so the drop is locatable.
+            let path = decoder.codingPath.map(\.stringValue).joined(separator: ".")
+            apiLogger.error(
+                """
+                dropped element at '\(path, privacy: .public)' \
+                decoding \(String(describing: Wrapped.self), privacy: .public): \
+                \(error.localizedDescription, privacy: .public)
+                """
+            )
+            value = nil
+        }
     }
 }

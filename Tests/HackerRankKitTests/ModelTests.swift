@@ -112,6 +112,19 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `page accepts the string-valued totals the v3 API sends`() throws {
+        let text = try decode(HackerRankPage<User>.self, #"{"data":[],"next":null,"total":"13"}"#)
+        let number = try decode(HackerRankPage<User>.self, #"{"data":[],"next":null,"total":13}"#)
+        let missing = try decode(HackerRankPage<User>.self, #"{"data":[],"next":null}"#)
+        let nonsense = try decode(HackerRankPage<User>.self, #"{"data":[],"next":null,"total":"many"}"#)
+
+        #expect(text.totalCount == 13)
+        #expect(number.totalCount == 13)
+        #expect(missing.totalCount == nil)
+        #expect(nonsense.totalCount == nil)
+    }
+
+    @Test
     func `page normalizes empty terminal cursors`() {
         let empty = Page(items: [1], next: "")
         let whitespace = Page(items: [1], next: "  \n")

@@ -51,7 +51,17 @@ public nonisolated struct HackerRankPage<Item: Decodable & Sendable & Identifiab
         let lenient = try container.decode([LenientElement<Item>].self, forKey: .data)
         data = lenient.compactMap(\.value)
         next = try container.decodeIfPresent(String.self, forKey: .next)
-        totalCount = try? container.decodeIfPresent(Int.self, forKey: .total)
+        totalCount = Self.flexibleTotal(container)
+    }
+
+    /// The envelope's `total`, which the v3 list responses document as a **string** (`"13"`)
+    /// while some endpoints send a number. Reading only `Int` left `totalCount` nil for a
+    /// conforming response, which also stopped `allUsers` fanning out past page one.
+    private static func flexibleTotal(_ container: KeyedDecodingContainer<CodingKeys>) -> Int? {
+        if let number = try? container.decodeIfPresent(Int.self, forKey: .total) { return number }
+        guard let text = try? container.decodeIfPresent(String.self, forKey: .total) else { return nil }
+
+        return Int(text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     public var pageItems: [Item] {

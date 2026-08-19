@@ -691,7 +691,7 @@ public struct HackerRankClient {
     /// Lists users from the legacy SCIM provisioning endpoint (`GET /Users`).
     public func scimUsers(limit: Int = 100, offset: Int = 0) async throws -> SCIMListResponse<SCIMUser> {
         let url = try offsetURL(path: "/Users", limit: limit, offset: offset)
-        return try await rest.performWithRetry(SCIMListResponse<SCIMUser>.self, request: rest.authorizedGET(url))
+        return try await rest.performWithRetry(SCIMListResponse<SCIMUser>.self, request: try authorizedGET(url))
     }
 
     /// Retrieves a user from the legacy SCIM provisioning endpoint (`GET /Users/{id}`).
@@ -725,7 +725,7 @@ public struct HackerRankClient {
     /// Lists groups from the legacy SCIM provisioning endpoint (`GET /Groups`).
     public func scimGroups(limit: Int = 100, offset: Int = 0) async throws -> SCIMListResponse<SCIMGroup> {
         let url = try offsetURL(path: "/Groups", limit: limit, offset: offset)
-        return try await rest.performWithRetry(SCIMListResponse<SCIMGroup>.self, request: rest.authorizedGET(url))
+        return try await rest.performWithRetry(SCIMListResponse<SCIMGroup>.self, request: try authorizedGET(url))
     }
 
     /// Retrieves a group from the legacy SCIM provisioning endpoint (`GET /Groups/{id}`).
@@ -918,7 +918,7 @@ public struct HackerRankClient {
         guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
 
         let url = try url(path: "\(Self.apiV3)/tests", query: [URLQueryItem(name: "limit", value: "1")])
-        _ = try await rest.performWithRetry(HackerRankPage<Test>.self, request: rest.authorizedGET(url))
+        _ = try await rest.performWithRetry(HackerRankPage<Test>.self, request: try authorizedGET(url))
     }
 
     // MARK: - URL building
@@ -957,6 +957,19 @@ public struct HackerRankClient {
         return url
     }
 
+    /// Builds the authorized GET for `url`, rejecting an unset token first.
+    ///
+    /// **Every** authenticated read goes through here. Calling the transport's
+    /// `authorizedGET` directly skipped the check, so whether a tokenless client failed
+    /// locally with ``HackerRankError/missingAPIKey`` or made a request with an empty
+    /// `Authorization: Bearer` header and reported the server's rejection depended on which
+    /// method the caller happened to use.
+    nonisolated func authorizedGET(_ url: URL) throws -> RESTRequest {
+        guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
+
+        return rest.authorizedGET(url)
+    }
+
     /// GETs `path` (already percent-encoded) with retries, as ``rest``'s own `fetch` would,
     /// but building the URL through ``url(path:query:)`` so the path is encoded exactly once.
     private func fetch<T: Decodable & Sendable>(
@@ -964,9 +977,7 @@ public struct HackerRankClient {
         path: String,
         query: [URLQueryItem] = []
     ) async throws -> T {
-        guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
-
-        return try await rest.performWithRetry(type, request: rest.authorizedGET(try url(path: path, query: query)))
+        try await rest.performWithRetry(type, request: try authorizedGET(try url(path: path, query: query)))
     }
 
     /// Sends a request with a JSON body to `path` (already percent-encoded), as ``rest``'s own
@@ -1005,7 +1016,7 @@ public struct HackerRankClient {
         query: [URLQueryItem] = []
     ) async throws -> Page<Item> {
         let url = try pageURL(path: path, cursor: cursor, query: query)
-        let response = try await rest.performWithRetry(HackerRankPage<Item>.self, request: rest.authorizedGET(url))
+        let response = try await rest.performWithRetry(HackerRankPage<Item>.self, request: try authorizedGET(url))
         return Page(items: response.data, next: response.next, totalCount: response.totalCount)
     }
 
