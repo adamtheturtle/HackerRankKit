@@ -475,69 +475,87 @@ public nonisolated struct UserUpdateOptions: Sendable, Equatable {
     }
 }
 
-/// The body sent when creating a question. The stable metadata fields are modelled here;
-/// type-specific authoring payloads can layer on later without changing this first slice.
+/// The body sent when creating a question.
+///
+/// `QuestionCreate` requires `type`, `name`, `problem_statement`, and
+/// `recommended_duration`, so those four are held separately from the optional
+/// ``QuestionWriteOptions`` and always encoded.
 nonisolated struct CreateQuestionRequest: Encodable {
     let name: String
     let type: String
+    let problemStatement: String
+    let recommendedDuration: Int
     let options: QuestionWriteOptions
 }
 
-/// The body sent when updating question metadata.
+/// The body sent when updating question metadata. Everything is optional here: an update
+/// sends only what should change.
 nonisolated struct UpdateQuestionRequest: Encodable {
     let name: String?
     let type: String?
     let options: QuestionWriteOptions
 }
 
+/// The wire keys shared by the question create and update bodies. Only fields the official
+/// `QuestionCreate`/`QuestionUpdate` schemas define appear: a key the server does not read
+/// would be dropped while the caller believed the change applied.
 private enum QuestionWriteCodingKeys: String, CodingKey {
     case name
     case type
-    case status
     case languages
     case problemStatement = "problem_statement"
     case recommendedDuration = "recommended_duration"
+    case internalNotes = "internal_notes"
     case tags
-    case maxScore = "max_score"
-    case skills
+    case options
+    case answer
 }
 
 extension CreateQuestionRequest {
     nonisolated func encode(to encoder: any Encoder) throws {
-        try encodeQuestionWriteBody(to: encoder, name: name, type: type, options: options)
+        var container = encoder.container(keyedBy: QuestionWriteCodingKeys.self)
+        try container.encode(problemStatement, forKey: .problemStatement)
+        try container.encode(recommendedDuration, forKey: .recommendedDuration)
+        try encodeQuestionWriteBody(
+            to: &container, name: name, type: type, options: options, skippingRequired: true
+        )
     }
 }
 
 extension UpdateQuestionRequest {
     nonisolated func encode(to encoder: any Encoder) throws {
-        try encodeQuestionWriteBody(to: encoder, name: name, type: type, options: options)
+        var container = encoder.container(keyedBy: QuestionWriteCodingKeys.self)
+        try encodeQuestionWriteBody(
+            to: &container, name: name, type: type, options: options, skippingRequired: false
+        )
     }
 }
 
+/// Encodes whichever question write fields are set. `skippingRequired` omits the two a
+/// create has already encoded from its own parameters, so an option value can never
+/// contradict the one the caller passed explicitly.
 private nonisolated func encodeQuestionWriteBody(
-    to encoder: any Encoder,
+    to container: inout KeyedEncodingContainer<QuestionWriteCodingKeys>,
     name: String?,
     type: String?,
-    options: QuestionWriteOptions
+    options: QuestionWriteOptions,
+    skippingRequired: Bool
 ) throws {
-    var container = encoder.container(keyedBy: QuestionWriteCodingKeys.self)
     try container.encodeIfPresent(nonBlank(name), forKey: .name)
     try container.encodeIfPresent(nonBlank(type), forKey: .type)
-    try container.encodeIfPresent(options.status, forKey: .status)
     try container.encodeIfPresent(options.languages, forKey: .languages)
+    try container.encodeIfPresent(options.tags, forKey: .tags)
+    try container.encodeIfPresent(options.internalNotes, forKey: .internalNotes)
+    try container.encodeIfPresent(options.mcqOptions, forKey: .options)
+    try container.encodeIfPresent(options.answer, forKey: .answer)
+    guard !skippingRequired else { return }
+
     try container.encodeIfPresent(options.problemStatement, forKey: .problemStatement)
     if options.clearsRecommendedDuration {
         try container.encodeNil(forKey: .recommendedDuration)
     } else {
         try container.encodeIfPresent(options.recommendedDuration, forKey: .recommendedDuration)
     }
-    try container.encodeIfPresent(options.tags, forKey: .tags)
-    if options.clearsMaxScore {
-        try container.encodeNil(forKey: .maxScore)
-    } else {
-        try container.encodeIfPresent(options.maxScore, forKey: .maxScore)
-    }
-    try container.encodeIfPresent(options.skills, forKey: .skills)
 }
 
 private nonisolated func nonBlank(_ value: String?) -> String? {
@@ -545,49 +563,51 @@ private nonisolated func nonBlank(_ value: String?) -> String? {
     return result?.isEmpty == false ? result : nil
 }
 
-/// Optional stable metadata fields for creating or updating questions. The full question
-/// authoring surface is type-specific, so this first slice intentionally sticks to fields
-/// shared by the list/detail models.
+/// Optional fields for creating or updating questions.
+///
+/// Only fields the official `QuestionCreate`/`QuestionUpdate` schemas define are modelled.
+/// A question's `status`, `max_score`, and `skills` are not writable through these
+/// endpoints and are deliberately absent.
 public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
-    /// Question lifecycle status.
-    public let status: String?
     /// Allowed programming languages for coding questions.
     public let languages: [String]?
-    /// Problem statement, typically Markdown or HTML.
+    /// Problem statement, typically Markdown or HTML. Required on a create, where
+    /// ``HackerRankClient/createQuestion(name:type:problemStatement:recommendedDuration:options:)``
+    /// takes it as its own parameter.
     public let problemStatement: String?
-    /// Recommended solving duration in minutes.
+    /// Recommended solving duration in minutes. Required on a create.
     public let recommendedDuration: Int?
     /// Whether an update explicitly clears the optional duration with JSON null.
     public let clearsRecommendedDuration: Bool
+    /// The author's private notes. An explicit empty string clears them.
+    public let internalNotes: String?
     /// Tags to attach to the question.
     public let tags: [String]?
-    /// Maximum achievable score.
-    public let maxScore: Double?
-    /// Whether an update explicitly clears the optional score with JSON null.
-    public let clearsMaxScore: Bool
-    /// Skills assessed by the question.
-    public let skills: [String]?
+    /// The answer choices for an `mcq`/`multiple_mcq` question, in order.
+    public let mcqOptions: [String]?
+    /// The correct answer, as one-based indices into ``mcqOptions``.
+    public let answer: QuestionAnswer?
 
     public init(
-        status: String? = nil,
         languages: [String]? = nil,
         problemStatement: String? = nil,
         recommendedDuration: Int? = nil,
+        internalNotes: String? = nil,
         tags: [String]? = nil,
-        maxScore: Double? = nil,
-        skills: [String]? = nil,
-        clearsRecommendedDuration: Bool = false,
-        clearsMaxScore: Bool = false
+        mcqOptions: [String]? = nil,
+        answer: QuestionAnswer? = nil,
+        clearsRecommendedDuration: Bool = false
     ) {
-        self.status = Self.nonBlank(status)
         self.languages = Self.cleanList(languages)
         self.problemStatement = Self.nonBlank(problemStatement)
         self.recommendedDuration = recommendedDuration
         self.clearsRecommendedDuration = clearsRecommendedDuration
+        // Empty text is meaningful on an update: it is how existing notes are cleared.
+        // nil still means "not supplied".
+        self.internalNotes = internalNotes.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         self.tags = Self.cleanList(tags)
-        self.maxScore = maxScore
-        self.clearsMaxScore = clearsMaxScore
-        self.skills = Self.cleanList(skills)
+        self.mcqOptions = mcqOptions
+        self.answer = answer
     }
 
     private static func cleanList(_ values: [String]?) -> [String]? {

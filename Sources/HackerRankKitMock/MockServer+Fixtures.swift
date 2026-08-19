@@ -199,13 +199,16 @@ public nonisolated enum MockFixtures {
     ],"next":null}
     """#
 
-    /// The richer single-question read: MCQ options, the (sensitive) correct answer, and
-    /// internal notes over the list shape.
+    /// The single-question read: the whole question resource plus the MCQ options, the
+    /// (sensitive) correct answer, and the internal notes. `answer` is the documented
+    /// **one-based option index**, not the option's text.
     static let questionDetail = #"""
     {"id":"q3","unique_id":"sql-joins","type":"mcq","name":"SQL Joins","status":"published",
+     "owner":"u1","created_at":"2026-04-02T09:00:00Z",
      "max_score":50.0,"recommended_duration":10,"tags":["sql"],
+     "problem_statement":"Which join keeps unmatched rows from the left table?",
      "options":["INNER JOIN","LEFT JOIN","RIGHT JOIN","FULL OUTER JOIN"],
-     "answer":"INNER JOIN","internal_notes":"Swap in a CROSS JOIN distractor next revision."}
+     "answer":2,"internal_notes":"Swap in a CROSS JOIN distractor next revision."}
     """#
 
     // MARK: - Interviews

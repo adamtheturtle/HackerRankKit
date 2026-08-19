@@ -337,23 +337,32 @@ public struct HackerRankClient {
         try await page(HackerRankPage<Question>.self, path: "\(Self.apiV3)/questions", cursor: cursor)
     }
 
-    /// The richer single-question read (`GET /questions/{id}`) backing a detail view.
-    /// Adds the MCQ options/answer and internal notes over the list row.
+    /// The single-question read (`GET /questions/{id}`). Returns the whole `QuestionShow`
+    /// resource — the list row's fields plus the MCQ options/answer and internal notes — so
+    /// a detail refresh can replace a stale row rather than only annotate one.
     public func question(id: String) async throws -> QuestionDetail {
         try await fetch(QuestionDetail.self, path: "\(Self.apiV3)/questions/\(Self.pathSegment(id))")
     }
 
-    /// Creates a question (`POST /questions`) using the stable shared metadata fields.
-    /// Type-specific authoring payloads can be added in a later layer.
+    /// Creates a question (`POST /questions`).
+    ///
+    /// `problemStatement` and `recommendedDuration` are parameters rather than options
+    /// because `QuestionCreate` requires them alongside the name and type: a body carrying
+    /// only a name and a type is rejected by the live API. For an `mcq`, pass the choices
+    /// and the correct answer through `options`.
     @discardableResult
     public func createQuestion(
         name: String,
         type: String,
+        problemStatement: String,
+        recommendedDuration: Int,
         options: QuestionWriteOptions = QuestionWriteOptions()
     ) async throws -> WrittenQuestion {
         let body = CreateQuestionRequest(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             type: type.trimmingCharacters(in: .whitespacesAndNewlines),
+            problemStatement: problemStatement,
+            recommendedDuration: recommendedDuration,
             options: options
         )
         return try await send(WrittenQuestion.self, method: "POST", path: "\(Self.apiV3)/questions", body: body)
@@ -378,18 +387,6 @@ public struct HackerRankClient {
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))",
             body: body
-        )
-    }
-
-    /// Deletes a question (`DELETE /questions/{id}`). Destructive and irreversible,
-    /// so a UI should confirm before this is called.
-    @discardableResult
-    public func deleteQuestion(questionID: String) async throws -> WrittenQuestion {
-        try await send(
-            WrittenQuestion.self,
-            method: "DELETE",
-            path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))",
-            body: EmptyBody()
         )
     }
 
