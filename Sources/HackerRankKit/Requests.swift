@@ -53,6 +53,27 @@ public nonisolated enum HackerRankJSONValue: Codable, Sendable, Hashable {
     }
 }
 
+extension HackerRankJSONValue {
+    /// A deterministic rendering of the value, with object keys sorted.
+    ///
+    /// Used where a value has to contribute to a stable identity. `hashValue` cannot: Swift
+    /// seeds its hasher per process, so an id built from one would change between launches.
+    public nonisolated var canonicalText: String {
+        switch self {
+        case let .string(value): "\"\(value)\""
+        case let .int(value): String(value)
+        case let .double(value): String(value)
+        case let .bool(value): String(value)
+        case let .array(values): "[" + values.map(\.canonicalText).joined(separator: ",") + "]"
+        case let .object(value):
+            "{" + value.sorted { $0.key < $1.key }
+                .map { "\($0.key):\($0.value.canonicalText)" }
+                .joined(separator: ",") + "}"
+        case .null: "null"
+        }
+    }
+}
+
 /// Authentication for a candidate result webhook (the schema's `WebhookAuthentication`).
 ///
 /// HackerRank requires this whenever a result URL is supplied, so a webhook is never
@@ -956,13 +977,68 @@ public nonisolated struct TeamMembershipResult: Decodable, Sendable {
     public let user: String?
 }
 
-/// An invite template returned by the invite-template endpoints.
-public nonisolated struct InviteTemplate: Decodable, Identifiable, Sendable {
+/// An invite template returned by the invite-template endpoints
+/// (`TemplateIndex`/`TemplateShow`).
+public nonisolated struct InviteTemplate: Decodable, Hashable, Identifiable, Sendable {
+    /// The template's identifier.
     public let id: String?
+    /// The template's name.
     public let name: String?
+    /// The subject line the template sends.
     public let subject: String?
-    public let body: String?
-    public let access: String?
+    /// The template's HTML message content.
+    public let content: String?
+    /// Whether this is the account's default invite template.
+    public let isDefault: Bool?
+    /// ISO-8601 creation timestamp.
+    public let createdAt: String?
+    /// ISO-8601 last-updated timestamp.
+    public let updatedAt: String?
+    /// Identifier of the user who created the template.
+    public let user: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case subject
+        case content
+        case isDefault = "default"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case user
+    }
+
+    public init(
+        id: String? = nil,
+        name: String? = nil,
+        subject: String? = nil,
+        content: String? = nil,
+        isDefault: Bool? = nil,
+        createdAt: String? = nil,
+        updatedAt: String? = nil,
+        user: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.subject = subject
+        self.content = content
+        self.isDefault = isDefault
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.user = user
+    }
+
+    public nonisolated init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = container.loggedDecodeIfPresent(String.self, forKey: .id)
+        name = container.loggedDecodeIfPresent(String.self, forKey: .name)
+        subject = container.loggedDecodeIfPresent(String.self, forKey: .subject)
+        content = container.loggedDecodeIfPresent(String.self, forKey: .content)
+        isDefault = container.loggedDecodeIfPresent(Bool.self, forKey: .isDefault)
+        createdAt = container.loggedDecodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = container.loggedDecodeIfPresent(String.self, forKey: .updatedAt)
+        user = container.loggedDecodeIfPresent(String.self, forKey: .user)
+    }
 }
 
 /// The body sent when creating an ATS-backed interview invite.
