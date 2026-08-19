@@ -956,21 +956,6 @@ public nonisolated struct TeamMembershipResult: Decodable, Sendable {
     public let user: String?
 }
 
-/// An interview template returned by the interview-template endpoints.
-public nonisolated struct InterviewTemplate: Decodable, Identifiable, Sendable {
-    public let id: Int?
-    public let name: String?
-    public let title: String?
-    public let description: String?
-}
-
-/// An acknowledgement for interview-template writes that may return only status metadata.
-public nonisolated struct InterviewTemplateWriteResult: Decodable, Sendable {
-    public let id: Int?
-    public let status: String?
-    public let message: String?
-}
-
 /// An invite template returned by the invite-template endpoints.
 public nonisolated struct InviteTemplate: Decodable, Identifiable, Sendable {
     public let id: String?
@@ -978,73 +963,6 @@ public nonisolated struct InviteTemplate: Decodable, Identifiable, Sendable {
     public let subject: String?
     public let body: String?
     public let access: String?
-}
-
-/// The body sent when creating or updating an interview template.
-nonisolated struct InterviewTemplateWriteRequest: Encodable {
-    let options: InterviewTemplateWriteOptions
-
-    enum CodingKeys: String, CodingKey {
-        case name
-        case title
-        case description
-        case questions
-        case tags
-        case metadata
-    }
-
-    func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(options.name, forKey: .name)
-        try container.encodeIfPresent(options.title, forKey: .title)
-        try container.encodeIfPresent(options.description, forKey: .description)
-        try container.encodeIfPresent(options.questions, forKey: .questions)
-        try container.encodeIfPresent(options.tags, forKey: .tags)
-        try container.encodeIfPresent(options.metadata, forKey: .metadata)
-    }
-}
-
-/// Optional fields for interview-template writes.
-public nonisolated struct InterviewTemplateWriteOptions: Sendable, Equatable {
-    public let name: String?
-    public let title: String?
-    public let description: String?
-    public let questions: [String]?
-    public let tags: [String]?
-    public let metadata: [String: HackerRankJSONValue]?
-
-    public init(
-        name: String? = nil,
-        title: String? = nil,
-        description: String? = nil,
-        questions: [String]? = nil,
-        tags: [String]? = nil,
-        metadata: [String: HackerRankJSONValue]? = nil
-    ) {
-        self.name = Self.nonBlank(name)
-        // Empty optional text is meaningful for updates: the API uses it to clear an
-        // existing value. Keep nil as "not supplied", but preserve an explicit empty
-        // string after trimming so callers can express that operation.
-        self.title = title.map(Self.trimmed)
-        self.description = description.map(Self.trimmed)
-        self.questions = Self.cleanList(questions)
-        self.tags = Self.cleanList(tags)
-        self.metadata = metadata?.isEmpty == false ? metadata : nil
-    }
-
-    private static func cleanList(_ values: [String]?) -> [String]? {
-        let cleaned = values?.compactMap(nonBlank)
-        return cleaned?.isEmpty == false ? cleaned : nil
-    }
-
-    private static func nonBlank(_ value: String?) -> String? {
-        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result?.isEmpty == false ? result : nil
-    }
-
-    private static func trimmed(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
 }
 
 /// The body sent when creating an ATS-backed interview invite.
