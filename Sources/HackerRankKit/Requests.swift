@@ -616,88 +616,6 @@ public nonisolated struct QuestionOperationResult: Decodable, Sendable {
     public let message: String?
 }
 
-/// The body sent when updating custom code stubs for a coding question.
-nonisolated struct CustomCodeStubsRequest: Encodable {
-    let stubs: [QuestionCodeStub]
-
-    enum CodingKeys: String, CodingKey {
-        case stubs = "custom_codestubs"
-    }
-}
-
-/// One language-specific custom code stub for a coding question.
-public nonisolated struct QuestionCodeStub: Sendable, Equatable, Encodable {
-    public let language: String
-    public let code: String
-
-    public init(language: String, code: String) {
-        self.language = language.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.code = code
-    }
-}
-
-/// The body sent when asking HackerRank to generate code stubs for a coding question.
-nonisolated struct GenerateCodeStubsRequest: Encodable {
-    let options: CodeStubGenerationOptions
-
-    enum CodingKeys: String, CodingKey {
-        case functionName = "function_name"
-        case returnType = "return_type"
-        case parameters
-        case languages
-    }
-
-    func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(options.functionName, forKey: .functionName)
-        try container.encodeIfPresent(options.returnType, forKey: .returnType)
-        try container.encodeIfPresent(options.parameters, forKey: .parameters)
-        try container.encodeIfPresent(options.languages, forKey: .languages)
-    }
-}
-
-/// Optional fields for code-stub generation. The API uses function-signature metadata
-/// and an optional language list; unset values are omitted.
-public nonisolated struct CodeStubGenerationOptions: Sendable, Equatable {
-    public let functionName: String?
-    public let returnType: String?
-    public let parameters: [CodeStubParameter]?
-    public let languages: [String]?
-
-    public init(
-        functionName: String? = nil,
-        returnType: String? = nil,
-        parameters: [CodeStubParameter]? = nil,
-        languages: [String]? = nil
-    ) {
-        self.functionName = Self.nonBlank(functionName)
-        self.returnType = Self.nonBlank(returnType)
-        self.parameters = parameters?.isEmpty == false ? parameters : nil
-        self.languages = Self.cleanList(languages)
-    }
-
-    private static func cleanList(_ values: [String]?) -> [String]? {
-        let cleaned = values?.compactMap(nonBlank)
-        return cleaned?.isEmpty == false ? cleaned : nil
-    }
-
-    private static func nonBlank(_ value: String?) -> String? {
-        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result?.isEmpty == false ? result : nil
-    }
-}
-
-/// One parameter in a generated function signature.
-public nonisolated struct CodeStubParameter: Sendable, Equatable, Encodable {
-    public let name: String
-    public let type: String
-
-    public init(name: String, type: String) {
-        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.type = type.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-}
-
 /// The body sent when adding or updating a question testcase.
 nonisolated struct QuestionTestcaseRequest: Encodable {
     let options: QuestionTestcaseOptions
@@ -720,7 +638,8 @@ nonisolated struct QuestionTestcaseRequest: Encodable {
         try container.encodeIfPresent(options.output, forKey: .output)
         try container.encodeIfPresent(options.name, forKey: .name)
         try container.encodeIfPresent(options.qid, forKey: .qid)
-        try container.encodeIfPresent(options.sample, forKey: .sample)
+        // The schema types `sample` as an integer, so a JSON boolean is the wrong type.
+        try container.encodeIfPresent(options.sample.map { $0 ? 1 : 0 }, forKey: .sample)
         try container.encodeIfPresent(options.score, forKey: .score)
         try container.encodeIfPresent(options.type, forKey: .type)
     }
@@ -728,6 +647,7 @@ nonisolated struct QuestionTestcaseRequest: Encodable {
 
 /// Optional fields for a coding-question testcase. These match the public API sample;
 /// unset string values are omitted, but an intentionally empty explanation is preserved.
+/// ``sample`` is a Swift `Bool` and is encoded as the integer the schema types it as.
 public nonisolated struct QuestionTestcaseOptions: Sendable, Equatable {
     public let explanation: String?
     public let input: String?

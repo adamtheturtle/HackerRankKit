@@ -96,6 +96,8 @@ nonisolated enum MockResponses {
         if path.contains("/interview_templates") { return MockFixtures.interviewTemplate }
         if path.contains("/users") { return MockFixtures.createdUser }
         if path.contains("/questions") {
+            if path.hasSuffix("/generate") { return MockFixtures.generatedCodeStubs }
+
             return isQuestionOperation(path) ? MockFixtures.questionOperationResult : MockFixtures.writtenQuestion
         }
         if path.contains("/teams") { return MockFixtures.createdTeam }

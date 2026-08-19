@@ -137,14 +137,22 @@ struct MockServerTests {
     @Test
     func `question codestub and testcase writes return an operation ack`() async throws {
         let stubs = try await client.updateCustomCodeStubs(
-            questionID: "q1", stubs: [QuestionCodeStub(language: "swift", code: "func solve() {}")]
+            questionID: "q1", stubs: [QuestionCodeStub(language: "swift", body: "func solve() {}")]
         )
         #expect(stubs.status == "ok")
 
+        // Generation answers with the templates it produced, not a status acknowledgement.
         let generated = try await client.generateCodeStubs(
-            questionID: "q1", options: CodeStubGenerationOptions(functionName: "twoSum", languages: ["swift"])
+            questionID: "q1",
+            options: CodeStubGenerationOptions(
+                type: "code", functionName: "twoSum", allowedLanguages: ["c", "clojure"]
+            )
         )
-        #expect(generated.id == "qop-1")
+        #expect(generated.functionName == "twoSum")
+        #expect(generated.templates.map(\.language) == ["c", "clojure"])
+        #expect(generated.templates.first?.head?.isEmpty == false)
+        #expect(generated.templates.first?.body?.isEmpty == false)
+        #expect(generated.templates.first?.tail?.isEmpty == false)
 
         let added = try await client.addTestcase(
             questionID: "q1",

@@ -40,6 +40,18 @@ public nonisolated enum MockFixtures {
     {"id":"qop-1","status":"ok","message":"Question operation completed"}
     """#
 
+    /// The templates returned by the codestub generation endpoint in the demo. This route
+    /// answers with the generated signature and one head/body/tail template per language,
+    /// keyed by language name — not with an operation status.
+    static let generatedCodeStubs = #"""
+    {"functionName":"twoSum","functionParams":"INTEGER_ARRAY nums INTEGER target",
+     "functionReturn":"INTEGER_ARRAY","allowedLanguages":"c, clojure","templateType":"function",
+     "c_template_head":"#include <stdio.h>\n","c_template":"int* twoSum(int* nums, int target) {\n\n}\n",
+     "c_template_tail":"int main() { return 0; }\n",
+     "clojure_template_head":"(ns Solution)\n","clojure_template":"(defn twoSum [nums target]\n)\n",
+     "clojure_template_tail":"(solve)\n"}
+    """#
+
     /// The record returned when a team is created in the demo.
     static let createdTeam = #"""
     {"id":"tm-created","name":"New Team","owner":"u1"}

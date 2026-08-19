@@ -436,22 +436,23 @@ struct RequestEncodingTests {
     @Test
     func `question operation requests encode first class bodies`() throws {
         let stubs = try encodedObject(CustomCodeStubsRequest(stubs: [
-            QuestionCodeStub(language: "swift", code: "func solve() {}")
+            QuestionCodeStub(language: "swift", body: "func solve() {}")
         ]))
-        let customCodeStubs = try #require(stubs["custom_codestubs"] as? [[String: Any]])
-        #expect(customCodeStubs.first?["language"] as? String == "swift")
-        #expect(customCodeStubs.first?["code"] as? String == "func solve() {}")
+        let templates = try #require(stubs["templates"] as? [[String: Any]])
+        #expect(templates.first?["language"] as? String == "swift")
+        #expect(templates.first?["body"] as? String == "func solve() {}")
 
         let generation = try encodedObject(GenerateCodeStubsRequest(options: CodeStubGenerationOptions(
             functionName: "twoSum",
-            returnType: "[Int]",
-            parameters: [CodeStubParameter(name: "nums", type: "[Int]")],
-            languages: ["swift", ""]
+            functionParams: "INTEGER_ARRAY nums",
+            functionReturn: "INTEGER_ARRAY",
+            allowedLanguages: ["c", "", "clojure"]
         )))
-        #expect(generation["function_name"] as? String == "twoSum")
-        #expect(generation["return_type"] as? String == "[Int]")
-        #expect(generation["languages"] as? [String] == ["swift"])
-        #expect((generation["parameters"] as? [[String: Any]])?.first?["name"] as? String == "nums")
+        #expect(generation["functionName"] as? String == "twoSum")
+        #expect(generation["functionParams"] as? String == "INTEGER_ARRAY nums")
+        #expect(generation["functionReturn"] as? String == "INTEGER_ARRAY")
+        // The languages go as one comma-separated value, blanks dropped.
+        #expect(generation["allowedLanguages"] as? String == "c,clojure")
 
         let testcase = try encodedObject(QuestionTestcaseRequest(options: QuestionTestcaseOptions(
             explanation: "",
@@ -468,7 +469,7 @@ struct RequestEncodingTests {
         #expect(testcase["output"] as? String == "output")
         #expect(testcase["name"] as? String == "Sample")
         #expect(testcase["qid"] as? Int == 1)
-        #expect(testcase["sample"] as? Bool == false)
+        #expect(testcase["sample"] as? Int == 0)
         #expect(testcase["score"] as? Int == 10)
         #expect(testcase["type"] as? String == "easy")
     }

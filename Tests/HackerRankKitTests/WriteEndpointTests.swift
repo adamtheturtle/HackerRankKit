@@ -41,15 +41,19 @@ struct WriteEndpointTests {
         let (client, recorder) = recordedClient()
         _ = try await client.updateCustomCodeStubs(
             questionID: "q1",
-            stubs: [QuestionCodeStub(language: "swift", code: "func solve() {}")]
+            stubs: [QuestionCodeStub(language: "swift", body: "func solve() {}", head: "import Foundation", tail: "")]
         )
 
         let sent = try sentRequest(recorder)
         #expect(sent.method == "PUT")
         #expect(sent.path == "/x/api/v3/questions/q1/custom_codestubs")
-        let stubs = try #require(sent.body["custom_codestubs"] as? [[String: Any]])
+        // The endpoint reads `templates`, and each template is head/body/tail.
+        #expect(sent.body["custom_codestubs"] == nil)
+        let stubs = try #require(sent.body["templates"] as? [[String: Any]])
         #expect(stubs.first?["language"] as? String == "swift")
-        #expect(stubs.first?["code"] as? String == "func solve() {}")
+        #expect(stubs.first?["head"] as? String == "import Foundation")
+        #expect(stubs.first?["body"] as? String == "func solve() {}")
+        #expect(stubs.first?["tail"] as? String == "")
     }
 
     @Test
@@ -58,20 +62,26 @@ struct WriteEndpointTests {
         _ = try await client.generateCodeStubs(
             questionID: "q1",
             options: CodeStubGenerationOptions(
+                type: "code",
                 functionName: "twoSum",
-                returnType: "[Int]",
-                parameters: [CodeStubParameter(name: "nums", type: "[Int]")],
-                languages: ["swift"]
+                functionParams: "INTEGER_ARRAY nums INTEGER target",
+                functionReturn: "INTEGER_ARRAY",
+                allowedLanguages: ["c", "clojure"]
             )
         )
 
         let sent = try sentRequest(recorder)
         #expect(sent.method == "PUT")
         #expect(sent.path == "/x/api/v3/questions/q1/generate")
-        #expect(sent.body["function_name"] as? String == "twoSum")
-        #expect(sent.body["return_type"] as? String == "[Int]")
-        #expect(sent.body["languages"] as? [String] == ["swift"])
-        #expect((sent.body["parameters"] as? [[String: Any]])?.first?["type"] as? String == "[Int]")
+        // This endpoint's keys are camelCase, and every value is a single string.
+        #expect(sent.body["type"] as? String == "code")
+        #expect(sent.body["functionName"] as? String == "twoSum")
+        #expect(sent.body["functionParams"] as? String == "INTEGER_ARRAY nums INTEGER target")
+        #expect(sent.body["functionReturn"] as? String == "INTEGER_ARRAY")
+        #expect(sent.body["allowedLanguages"] as? String == "c,clojure")
+        for absent in ["function_name", "return_type", "parameters", "languages"] {
+            #expect(sent.body[absent] == nil, "\(absent) is not a documented generate field")
+        }
     }
 
     @Test
@@ -88,7 +98,8 @@ struct WriteEndpointTests {
         #expect(sent.body["input"] as? String == "2 7")
         #expect(sent.body["output"] as? String == "0 1")
         #expect(sent.body["name"] as? String == "Sample")
-        #expect(sent.body["sample"] as? Bool == true)
+        // The schema types `sample` as an integer.
+        #expect(sent.body["sample"] as? Int == 1)
         #expect(sent.body["score"] as? Int == 10)
         // Unset fields stay out of the body rather than being sent as null.
         #expect(sent.body["explanation"] == nil)
