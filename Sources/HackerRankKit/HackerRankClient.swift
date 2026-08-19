@@ -172,10 +172,21 @@ public struct HackerRankClient {
 
     /// The richer single-candidate read (`GET /tests/{test_id}/candidates/{candidate_id}`),
     /// backing detail refreshes that need fields beyond the paged list row.
-    public func candidate(testID: String, candidateID: String) async throws -> TestCandidate {
+    ///
+    /// Several of the fields this read is called for — the per-question scores, the attempt
+    /// events, the report comments, the IP address — are opt-in: the server omits them
+    /// unless they are named in `additional_fields`. They are requested by default, since
+    /// this method exists to return more than the list row already carries. Pass `[]` for
+    /// the lighter response.
+    public func candidate(
+        testID: String,
+        candidateID: String,
+        additionalFields: [String] = TestCandidate.detailAdditionalFields
+    ) async throws -> TestCandidate {
         try await fetch(
             TestCandidate.self,
-            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))"
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/candidates/\(Self.pathSegment(candidateID))",
+            query: Self.additionalFieldsQuery(additionalFields)
         )
     }
 
@@ -316,8 +327,20 @@ public struct HackerRankClient {
 
     /// The richer single-test read (`GET /tests/{id}`) backing a detail view. Adds the
     /// candidate login links, the master password, and the MCQ scoring over the list row.
-    public func test(id: String) async throws -> TestDetail {
-        try await fetch(TestDetail.self, path: "\(Self.apiV3)/tests/\(Self.pathSegment(id))")
+    ///
+    /// Every one of those is an opt-in field: without naming them in `additional_fields`
+    /// the server returns a response in which each is absent, so the read added nothing.
+    /// The fields ``TestDetail`` models are requested by default; pass `[]` for the
+    /// lighter response.
+    public func test(
+        id: String,
+        additionalFields: [String] = TestDetail.detailAdditionalFields
+    ) async throws -> TestDetail {
+        try await fetch(
+            TestDetail.self,
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(id))",
+            query: Self.additionalFieldsQuery(additionalFields)
+        )
     }
 
     /// One page of users who can invite candidates to a test
@@ -1103,6 +1126,15 @@ public struct HackerRankClient {
         return lhs.scheme?.lowercased() == rhs.scheme?.lowercased()
             && leftHost.caseInsensitiveCompare(rightHost) == .orderedSame
             && port(of: lhs) == port(of: rhs)
+    }
+
+    /// The `additional_fields` query for a detail read: the API takes the opt-in field
+    /// names as one comma-separated value. An empty list sends no parameter at all.
+    nonisolated static func additionalFieldsQuery(_ fields: [String]) -> [URLQueryItem] {
+        let cleaned = fields.compactMap(nonBlank)
+        guard !cleaned.isEmpty else { return [] }
+
+        return [URLQueryItem(name: "additional_fields", value: cleaned.joined(separator: ","))]
     }
 
     /// Trims `value` and returns `nil` for an empty/whitespace-only result, so blank

@@ -372,7 +372,25 @@ public nonisolated enum MockFixtures {
     ],"next":null}
     """#
 
-    /// Candidates the demo "candidate search" matches over.
+    /// The organisation-wide candidate search results. This endpoint answers with
+    /// `CandidateSearchResult` rows — a person plus their accessible attempts — keyed by
+    /// `uuid`, not with the per-test candidate records the other searches return.
+    static let organizationCandidateSearch = #"""
+    {"data":[
+      {"uuid":"cand-ada","name":"Ada Lovelace","email":"ada@example.com",
+       "created_at":"2026-04-20T09:00:00Z","updated_at":"2026-05-02T11:15:00Z",
+       "attempts":[{"attempt_id":"c1","test_id":"t1","score":92.0,"percentage_score":92.0,
+                    "report_url":"https://www.hackerrank.com/x/candidates/c1/report",
+                    "attempt_starttime":"2026-05-02T10:00:00Z","attempt_endtime":"2026-05-02T11:15:00Z"}]},
+      {"uuid":"cand-grace","name":"Grace Hopper","email":"grace@example.com",
+       "created_at":"2026-04-22T09:00:00Z","updated_at":"2026-05-04T09:30:00Z",
+       "attempts":[{"attempt_id":"c3","test_id":"t1","score":58.0,"percentage_score":58.0,
+                    "report_url":"https://www.hackerrank.com/x/candidates/c3/report",
+                    "attempt_starttime":"2026-05-04T08:30:00Z"}]}
+    ],"next":null}
+    """#
+
+    /// Candidates the demo per-test "candidate search" matches over.
     static let candidateSearch = #"""
     {"data":[
       {"id":"c1","email":"ada@example.com","full_name":"Ada Lovelace","score":92.0,

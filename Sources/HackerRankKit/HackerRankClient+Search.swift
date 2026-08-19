@@ -23,9 +23,16 @@ extension HackerRankClient {
     }
 
     /// Searches candidates across the organisation (`GET /candidates/search?query=`).
-    public func searchCandidates(query: String, after cursor: String? = nil) async throws -> Page<TestCandidate> {
+    ///
+    /// This endpoint answers with ``CandidateSearchResult`` rows — a person plus every test
+    /// attempt of theirs the caller can see — not with the per-test ``TestCandidate``
+    /// records the other searches return. Decoding them as `TestCandidate` required an `id`
+    /// the rows do not have, so the lenient page decoder discarded every match and the
+    /// search always looked empty.
+    public func searchCandidates(query: String, after cursor: String? = nil) async throws
+        -> Page<CandidateSearchResult> {
         try await searchPage(
-            HackerRankPage<TestCandidate>.self,
+            HackerRankPage<CandidateSearchResult>.self,
             path: "\(Self.apiV3)/candidates/search",
             queryItemName: "query",
             query: query,
