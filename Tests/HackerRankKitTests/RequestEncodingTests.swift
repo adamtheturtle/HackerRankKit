@@ -513,16 +513,45 @@ struct RequestEncodingTests {
             title: "Backend Pairing",
             from: "2026-07-10T09:00:00Z",
             to: "2026-07-10T10:00:00Z",
-            candidate: "ada@example.com",
+            candidate: InterviewCandidate(email: "ada@example.com", name: "Ada Lovelace"),
             interviewers: ["ian@example.com", ""],
-            notes: "Discuss APIs"
+            notes: "Discuss APIs",
+            resumeURL: "https://example.com/cv.pdf",
+            resultURL: "https://example.com/webhook",
+            sendEmail: true,
+            metadata: ["ats_id": .string("req-1")],
+            interviewTemplateID: 101,
+            aiAssistantAvailable: false
         )))
         #expect(interview["title"] as? String == "Backend Pairing")
         #expect(interview["from"] as? String == "2026-07-10T09:00:00Z")
         #expect(interview["to"] as? String == "2026-07-10T10:00:00Z")
-        #expect(interview["candidate"] as? String == "ada@example.com")
+        // The candidate is an object, not a bare email string.
+        #expect((interview["candidate"] as? [String: Any])?["email"] as? String == "ada@example.com")
+        #expect((interview["candidate"] as? [String: Any])?["name"] as? String == "Ada Lovelace")
         #expect(interview["interviewers"] as? [String] == ["ian@example.com"])
+        // Interviewers are only applied when the replacement flag goes with them.
+        #expect(interview["replace_interviewers"] as? Bool == true)
         #expect(interview["notes"] as? String == "Discuss APIs")
+        #expect(interview["resume_url"] as? String == "https://example.com/cv.pdf")
+        #expect(interview["result_url"] as? String == "https://example.com/webhook")
+        #expect(interview["send_email"] as? Bool == true)
+        #expect((interview["metadata"] as? [String: Any])?["ats_id"] as? String == "req-1")
+        #expect(interview["interview_template_id"] as? Int == 101)
+        #expect(interview["ai_assistant_available"] as? Bool == false)
+
+        // An interview update can clear the fields it set.
+        let cleared = try encodedObject(UpdateInterviewRequest(options: InterviewUpdateOptions(
+            title: "", interviewers: [], notes: "  "
+        )))
+        #expect(cleared["title"] as? String == "")
+        #expect(cleared["notes"] as? String == "")
+        #expect(cleared["interviewers"] as? [String] == [])
+        #expect(cleared["replace_interviewers"] as? Bool == true)
+
+        // An omitted update stays omitted, and never claims to replace the interviewers.
+        let untouched = try encodedObject(UpdateInterviewRequest(options: InterviewUpdateOptions()))
+        #expect(untouched.isEmpty)
 
         let template = try encodedObject(InterviewTemplateWriteRequest(options: InterviewTemplateWriteOptions(
             name: "Backend Template",

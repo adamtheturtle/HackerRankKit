@@ -985,81 +985,6 @@ public nonisolated struct InviteTemplate: Decodable, Identifiable, Sendable {
     public let access: String?
 }
 
-/// The body sent when creating a QuickPad interview.
-nonisolated struct CreateQuickPadRequest: Encodable {
-    let title: String?
-    let quickpad: Bool
-}
-
-/// The body sent when scheduling an interview. The start time is an ISO-8601 string;
-/// blank optional fields are omitted.
-nonisolated struct ScheduleInterviewRequest: Encodable {
-    let title: String
-    let from: String
-    let candidate: String?
-    let notes: String?
-}
-
-/// The body sent when updating an interview.
-nonisolated struct UpdateInterviewRequest: Encodable {
-    let options: InterviewUpdateOptions
-
-    enum CodingKeys: String, CodingKey {
-        case title
-        case from
-        case to
-        case candidate
-        case interviewers
-        case notes
-    }
-
-    func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(options.title, forKey: .title)
-        try container.encodeIfPresent(options.from, forKey: .from)
-        try container.encodeIfPresent(options.to, forKey: .to)
-        try container.encodeIfPresent(options.candidate, forKey: .candidate)
-        try container.encodeIfPresent(options.interviewers, forKey: .interviewers)
-        try container.encodeIfPresent(options.notes, forKey: .notes)
-    }
-}
-
-/// Optional fields for updating an interview.
-public nonisolated struct InterviewUpdateOptions: Sendable, Equatable {
-    public let title: String?
-    public let from: String?
-    public let to: String?
-    public let candidate: String?
-    public let interviewers: [String]?
-    public let notes: String?
-
-    public init(
-        title: String? = nil,
-        from: String? = nil,
-        to: String? = nil,
-        candidate: String? = nil,
-        interviewers: [String]? = nil,
-        notes: String? = nil
-    ) {
-        self.title = Self.nonBlank(title)
-        self.from = Self.nonBlank(from)
-        self.to = Self.nonBlank(to)
-        self.candidate = Self.nonBlank(candidate)
-        self.interviewers = Self.cleanList(interviewers)
-        self.notes = Self.nonBlank(notes)
-    }
-
-    private static func cleanList(_ values: [String]?) -> [String]? {
-        let cleaned = values?.compactMap(nonBlank)
-        return cleaned?.isEmpty == false ? cleaned : nil
-    }
-
-    private static func nonBlank(_ value: String?) -> String? {
-        let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result?.isEmpty == false ? result : nil
-    }
-}
-
 /// The body sent when creating or updating an interview template.
 nonisolated struct InterviewTemplateWriteRequest: Encodable {
     let options: InterviewTemplateWriteOptions
@@ -1125,14 +1050,6 @@ public nonisolated struct InterviewTemplateWriteOptions: Sendable, Equatable {
     private static func trimmed(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-}
-
-/// The interview echoed back by a successful create. All-optional so a 2xx never fails
-/// to decode on an unexpected shape; the URL lets a client open the new pad.
-public nonisolated struct CreatedInterview: Decodable, Sendable {
-    public let id: String?
-    public let url: String?
-    public let status: String?
 }
 
 /// The body sent when creating an ATS-backed interview invite.

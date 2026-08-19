@@ -524,11 +524,14 @@ public struct HackerRankClient {
     }
 
     /// Creates an instant QuickPad collaborative interview (`POST /interviews`).
+    ///
+    /// An interview created with a title and no scheduled window is the instant pad. The
+    /// create schema has no `quickpad` property, so the body carries only the title.
     @discardableResult
     public func createQuickPad(title: String? = nil) async throws -> CreatedInterview {
         // The API rejects a titleless interview with HTTP 400, so fall back to a dated
         // default rather than surfacing an error for an optional title.
-        let body = CreateQuickPadRequest(title: Self.nonBlank(title) ?? Self.defaultQuickPadTitle(), quickpad: true)
+        let body = CreateQuickPadRequest(title: Self.nonBlank(title) ?? Self.defaultQuickPadTitle())
         return try await send(CreatedInterview.self, method: "POST", path: "\(Self.apiV3)/interviews", body: body)
     }
 
@@ -541,19 +544,28 @@ public struct HackerRankClient {
         try await createQuickPad(title: title)
     }
 
-    /// Schedules an interview (`POST /interviews`). The start time is sent as an
-    /// ISO-8601 timestamp.
+    /// Schedules an interview (`POST /interviews`). The scheduled window is sent as
+    /// ISO-8601 timestamps.
+    ///
+    /// The candidate is an object, not a bare email: the schema carries their name
+    /// alongside the address. `interviewers` takes the emails (or ids) to invite.
     @discardableResult
     public func scheduleInterview(
         title: String,
         from: Date,
-        candidateEmail: String? = nil,
+        to: Date? = nil,
+        candidate: InterviewCandidate? = nil,
+        interviewers: [String] = [],
         notes: String? = nil
     ) async throws -> CreatedInterview {
+        let formatter = ISO8601DateFormatter()
+        let cleanedInterviewers = interviewers.compactMap(Self.nonBlank)
         let body = ScheduleInterviewRequest(
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-            from: ISO8601DateFormatter().string(from: from),
-            candidate: Self.nonBlank(candidateEmail),
+            from: formatter.string(from: from),
+            to: to.map(formatter.string(from:)),
+            candidate: candidate,
+            interviewers: cleanedInterviewers.isEmpty ? nil : cleanedInterviewers,
             notes: Self.nonBlank(notes)
         )
         return try await send(CreatedInterview.self, method: "POST", path: "\(Self.apiV3)/interviews", body: body)
