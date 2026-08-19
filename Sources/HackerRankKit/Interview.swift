@@ -16,6 +16,10 @@ public nonisolated struct Interview: Codable, Hashable, Identifiable, Sendable {
     public let status: String
     /// The interview's web URL.
     public let url: String
+    /// ISO-8601 scheduled start of the interview.
+    public let scheduledFrom: String?
+    /// ISO-8601 scheduled end of the interview.
+    public let scheduledTo: String?
     /// The interview's display title, if any.
     public let title: String?
     /// Reviewer feedback, if any.
@@ -39,6 +43,8 @@ public nonisolated struct Interview: Codable, Hashable, Identifiable, Sendable {
         case id
         case status
         case url
+        case scheduledFrom = "from"
+        case scheduledTo = "to"
         case title
         case feedback
         case thumbsUp = "thumbs_up"
@@ -54,6 +60,8 @@ public nonisolated struct Interview: Codable, Hashable, Identifiable, Sendable {
         id: String,
         status: String,
         url: String,
+        scheduledFrom: String? = nil,
+        scheduledTo: String? = nil,
         title: String? = nil,
         feedback: String? = nil,
         thumbsUp: Int? = nil,
@@ -67,6 +75,8 @@ public nonisolated struct Interview: Codable, Hashable, Identifiable, Sendable {
         self.id = id
         self.status = status
         self.url = url
+        self.scheduledFrom = scheduledFrom
+        self.scheduledTo = scheduledTo
         self.title = title
         self.feedback = feedback
         self.thumbsUp = thumbsUp
@@ -90,6 +100,8 @@ extension Interview {
         id = try container.decode(String.self, forKey: .id)
         status = (container.loggedDecodeIfPresent(String.self, forKey: .status)) ?? ""
         url = (container.loggedDecodeIfPresent(String.self, forKey: .url)) ?? ""
+        scheduledFrom = container.loggedDecodeIfPresent(String.self, forKey: .scheduledFrom)
+        scheduledTo = container.loggedDecodeIfPresent(String.self, forKey: .scheduledTo)
         title = container.loggedDecodeIfPresent(String.self, forKey: .title)
         feedback = container.loggedDecodeIfPresent(String.self, forKey: .feedback)
         thumbsUp = container.loggedDecodeIfPresent(Int.self, forKey: .thumbsUp)

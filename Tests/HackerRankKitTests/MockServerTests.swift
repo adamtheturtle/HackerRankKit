@@ -68,8 +68,20 @@ struct MockServerTests {
     func `interview detail and transcript decode`() async throws {
         let detail = try await client.interview(id: "i1")
         #expect(detail.candidate?.displayName == "Ada Lovelace")
+        // The detail response carries the whole interview, and the documented numeric owner.
+        #expect(detail.interview.id == "i1")
+        #expect(detail.interview.title == "Senior Backend — Pairing")
+        #expect(detail.userID == 4821)
         let transcript = try await client.interviewTranscript(id: "i1")
         #expect(transcript.messages.count == 3)
+        #expect(transcript.messages.first?.sentAt != nil)
+    }
+
+    @Test
+    func `the interviews list keeps each scheduled window`() async throws {
+        let page = try await client.interviewsPage()
+        #expect(page.items.map(\.scheduledFrom) == ["2026-05-05T13:00:00Z", "2026-05-12T16:00:00Z"])
+        #expect(page.items.map(\.scheduledTo) == ["2026-05-05T14:00:00Z", "2026-05-12T17:00:00Z"])
     }
 
     @Test

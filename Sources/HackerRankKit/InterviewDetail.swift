@@ -10,7 +10,11 @@ import Foundation
 /// candidate, and the links to the résumé and result. Every field is optional so a 2xx detail
 /// response never fails to decode on a shape that differs between interview kinds. The
 /// collaborative pad's source code is **not** exposed by the API, so it is not modelled here.
-public nonisolated struct InterviewDetail: Codable, Hashable, Sendable {
+public nonisolated struct InterviewDetail: Decodable, Hashable, Sendable {
+    /// The interview resource itself, exactly as the list returns it. The detail response
+    /// carries the whole record, so a detail fetch can replace a stale list row rather
+    /// than forcing a second request for the fields it dropped.
+    public let interview: Interview
     /// ISO-8601 scheduled start.
     public let scheduledFrom: String?
     /// ISO-8601 scheduled end.
@@ -21,7 +25,10 @@ public nonisolated struct InterviewDetail: Codable, Hashable, Sendable {
     public let resultURL: String?
     /// The people conducting the interview.
     public let interviewers: [InterviewPerson]
-    /// The interview's owner/creator.
+    /// Identifier of the interview's owner. The schema types `user` as an integer id.
+    public let userID: Int?
+    /// The interview's owner as a person, for deployments that expand `user` into an
+    /// object rather than returning the documented id.
     public let user: InterviewPerson?
     /// The candidate being interviewed.
     public let candidate: InterviewPerson?
@@ -37,20 +44,24 @@ public nonisolated struct InterviewDetail: Codable, Hashable, Sendable {
     }
 
     public nonisolated init(from decoder: any Decoder) throws {
+        interview = try Interview(from: decoder)
         let container = try decoder.container(keyedBy: CodingKeys.self)
         scheduledFrom = container.loggedDecodeIfPresent(String.self, forKey: .scheduledFrom)
         scheduledTo = container.loggedDecodeIfPresent(String.self, forKey: .scheduledTo)
         resumeURL = container.loggedDecodeIfPresent(String.self, forKey: .resumeURL)
         resultURL = container.loggedDecodeIfPresent(String.self, forKey: .resultURL)
         interviewers = (container.loggedDecodeIfPresent([InterviewPerson].self, forKey: .interviewers)) ?? []
-        user = container.loggedDecodeIfPresent(InterviewPerson.self, forKey: .user)
+        // `user` is documented as an integer id. Reading it only as a person meant a
+        // conforming response lost the owner entirely.
+        userID = container.loggedDecodeIfPresent(Int.self, forKey: .user)
+        user = userID == nil ? container.loggedDecodeIfPresent(InterviewPerson.self, forKey: .user) : nil
         candidate = container.loggedDecodeIfPresent(InterviewPerson.self, forKey: .candidate)
     }
 
     /// Whether the detail carries any people worth a dedicated section, so a UI can avoid an
     /// empty "People" group when the detail response adds nothing over the list row.
     public var hasPeople: Bool {
-        !interviewers.isEmpty || user != nil || candidate != nil
+        !interviewers.isEmpty || user != nil || userID != nil || candidate != nil
     }
 }
 
@@ -95,14 +106,18 @@ public nonisolated struct InterviewPerson: Codable, Hashable, Sendable {
     }
 
     /// A human-readable label: an explicit name, else first + last, else the email, else "Unknown".
+    ///
+    /// Every candidate is trimmed first. A whitespace-only name is not a name, and returning
+    /// it rendered the person as a blank row instead of falling back to something readable.
     public var displayName: String {
-        if let name, !name.isEmpty { return name }
-        let full = [firstName, lastName]
-            .compactMap(\.self)
-            .joined(separator: " ")
-            .trimmingCharacters(in: .whitespaces)
-        if !full.isEmpty { return full }
-        return email ?? "Unknown"
+        let candidates: [String?] = [
+            name, [firstName, lastName].compactMap(\.self).joined(separator: " "), email
+        ]
+        for candidate in candidates {
+            let trimmed = candidate?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let trimmed, !trimmed.isEmpty { return trimmed }
+        }
+        return "Unknown"
     }
 }
 
@@ -130,14 +145,22 @@ public nonisolated struct InterviewMessage: Codable, Hashable, Identifiable, Sen
     public let email: String?
     /// Whether the author is the candidate (vs an interviewer), for styling.
     public let candidate: Bool?
-    /// Unix epoch seconds the message was sent.
+    /// Unix epoch **milliseconds** the message was sent — the API returns 13-digit values.
+    /// Use ``sentAt`` rather than treating this as seconds.
     public let timestamp: Int?
     public let text: String?
 
+    /// The moment the message was sent, converted from the API's epoch milliseconds.
+    public var sentAt: Date? {
+        timestamp.map { Date(timeIntervalSince1970: Double($0) / 1000) }
+    }
+
     /// Stable identity for `ForEach`: the server's `messageId` when present, otherwise a
-    /// composite of the fields that's good enough to keep rows distinct.
+    /// composite of the fields that pin one line. The text itself is part of it — two
+    /// different sentences from the same speaker at the same moment used to collide
+    /// whenever they happened to be the same length.
     public var id: String {
-        messageID ?? "\(author ?? "")-\(timestamp ?? 0)-\(text?.count ?? 0)"
+        messageID ?? "\(author ?? "")-\(timestamp ?? 0)-\(text ?? "")"
     }
 
     enum CodingKeys: String, CodingKey {
