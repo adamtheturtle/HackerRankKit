@@ -29,7 +29,13 @@ import HackerRankKit
 let client = HackerRankClient(token: "your-personal-access-token")
 
 let tests = try await client.testsPage()
-let created = try await client.createTest(name: "Phone screen")
+// `duration`, `roleIDs`, and `experience` are required by the create API alongside the name.
+let created = try await client.createTest(
+    name: "Phone screen",
+    duration: 60,
+    roleIDs: ["backend-engineer"],
+    experience: ["Senior"]
+)
 ```
 
 ## Requirements

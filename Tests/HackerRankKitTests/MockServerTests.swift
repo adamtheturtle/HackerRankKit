@@ -74,7 +74,9 @@ struct MockServerTests {
 
     @Test
     func `write flows return their echoed record`() async throws {
-        let created = try await client.createTest(name: "New Screen")
+        let created = try await client.createTest(
+            name: "New Screen", duration: 60, roleIDs: ["r1"], experience: ["Senior"]
+        )
         #expect(created.id == "t-created")
         let invited = try await client.inviteCandidate(testID: "t1", email: "x@example.com")
         #expect(invited.email == "invited@example.com")
