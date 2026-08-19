@@ -552,26 +552,34 @@ struct RequestEncodingTests {
         // An omitted update stays omitted, and never claims to replace the interviewers.
         let untouched = try encodedObject(UpdateInterviewRequest(options: InterviewUpdateOptions()))
         #expect(untouched.isEmpty)
+    }
 
-        let template = try encodedObject(InterviewTemplateWriteRequest(options: InterviewTemplateWriteOptions(
+    @Test
+    func `interview template writes encode each endpoint's own fields`() throws {
+        let created = try encodedObject(CreateInterviewTemplateRequest(
             name: "Backend Template",
-            title: "Backend Pairing",
-            description: "Live interview",
-            questions: ["q1", ""],
-            tags: ["backend"],
-            metadata: ["source": .string("api")]
-        )))
-        #expect(template["name"] as? String == "Backend Template")
-        #expect(template["title"] as? String == "Backend Pairing")
-        #expect(template["description"] as? String == "Live interview")
-        #expect(template["questions"] as? [String] == ["q1"])
-        #expect(template["tags"] as? [String] == ["backend"])
-        #expect((template["metadata"] as? [String: Any])?["source"] as? String == "api")
-
-        let clearedTemplate = try encodedObject(InterviewTemplateWriteRequest(
-            options: InterviewTemplateWriteOptions(title: "   ", description: "")
+            options: InterviewTemplateCreateOptions(roleID: "8b1o41tbpiq", teamShare: 2, questionIDs: [1_939_659])
         ))
-        #expect(clearedTemplate["title"] as? String == "")
-        #expect(clearedTemplate["description"] as? String == "")
+        #expect(created["name"] as? String == "Backend Template")
+        #expect(created["role_id"] as? String == "8b1o41tbpiq")
+        #expect(created["team_share"] as? Int == 2)
+        // Questions go under `question_ids`, as integers.
+        #expect(created["question_ids"] as? [Int] == [1_939_659])
+        for absent in ["title", "description", "tags", "metadata", "questions"] {
+            #expect(created[absent] == nil, "\(absent) is not a documented template create field")
+        }
+
+        let updated = try encodedObject(UpdateInterviewTemplateRequest(
+            options: InterviewTemplateUpdateOptions(
+                name: "Renamed Template", roleID: "8b1o41tbpiq", teamShare: 1, scorecardID: 98765
+            )
+        ))
+        #expect(updated["name"] as? String == "Renamed Template")
+        #expect(updated["role_id"] as? String == "8b1o41tbpiq")
+        #expect(updated["team_share"] as? Int == 1)
+        #expect(updated["scorecard_id"] as? Int == 98765)
+        // The update endpoint sets no question list at all.
+        #expect(updated["question_ids"] == nil)
+        #expect(updated["questions"] == nil)
     }
 }

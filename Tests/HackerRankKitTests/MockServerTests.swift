@@ -200,13 +200,11 @@ struct MockServerTests {
 
     @Test
     func `interview template writes return the echoed template`() async throws {
-        let created = try await client.createInterviewTemplate(
-            options: InterviewTemplateWriteOptions(name: "Backend Template", title: "Backend Pairing")
-        )
+        let created = try await client.createInterviewTemplate(name: "Backend Template")
         #expect(created.id == 101)
 
         let updated = try await client.updateInterviewTemplate(
-            id: 101, options: InterviewTemplateWriteOptions(name: "Renamed Template")
+            id: 101, options: InterviewTemplateUpdateOptions(name: "Renamed Template")
         )
         #expect(updated.name == "Backend Pairing")
     }
@@ -303,12 +301,21 @@ struct MockServerTests {
         let deletedInterview = try await client.deleteInterview(id: "i1")
         #expect(deletedInterview.status == "scheduled")
 
-        let interviewTemplates = try await client.interviewTemplatesPage()
+        let interviewTemplates = try await client.interviewTemplatesPage(filter: .owned)
         #expect(interviewTemplates.items.first?.id == 101)
         let interviewTemplate = try await client.interviewTemplate(id: 101)
         #expect(interviewTemplate.name == "Backend Pairing")
+        #expect(interviewTemplate.status == 1)
+        #expect(interviewTemplate.user == 4821)
+        #expect(interviewTemplate.roles == ["8b1o41tbpiq"])
+        #expect(interviewTemplate.teamShare == 1)
+        #expect(interviewTemplate.questions == ["q1", "q2"])
+        #expect(interviewTemplate.scorecard == 98765)
+        #expect(interviewTemplate.importTemplate == true)
+        #expect(interviewTemplate.editorAccess == true)
+        #expect(interviewTemplate.createdAt == "2026-04-10T09:00:00Z")
         let deletedTemplate = try await client.deleteInterviewTemplate(id: 101)
-        #expect(deletedTemplate.id == 101)
+        #expect(deletedTemplate.message == "Success")
 
         let inviteTemplates = try await client.inviteTemplatesPage(access: "company")
         #expect(inviteTemplates.items.first?.id == "tpl-1")

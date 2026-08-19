@@ -52,6 +52,11 @@ public nonisolated enum MockFixtures {
      "clojure_template_tail":"(solve)\n"}
     """#
 
+    /// The acknowledgement returned when an interview template is deleted in the demo.
+    static let deletedInterviewTemplate = #"""
+    {"message":"Success"}
+    """#
+
     /// The record returned when a team is created in the demo.
     static let createdTeam = #"""
     {"id":"tm-created","name":"New Team","owner":"u1"}
@@ -272,13 +277,18 @@ public nonisolated enum MockFixtures {
 
     static let interviewTemplates = #"""
     {"data":[
-      {"id":101,"name":"Backend Pairing","title":"Backend Pairing","description":"Live backend interview"},
-      {"id":102,"name":"Frontend Pairing","title":"Frontend Pairing"}
+      {"id":101,"name":"Backend Pairing","created_at":"2026-04-10T09:00:00Z","status":1,"user":4821,
+       "roles":["8b1o41tbpiq"],"team_share":1,"questions":["q1","q2"],"scorecard":98765,
+       "import_template":true,"editor_access":true},
+      {"id":102,"name":"Frontend Pairing","created_at":"2026-04-11T09:00:00Z","status":1,"user":4821,
+       "roles":[],"team_share":0,"questions":[],"import_template":true,"editor_access":false}
     ],"next":null}
     """#
 
     static let interviewTemplate = #"""
-    {"id":101,"name":"Backend Pairing","title":"Backend Pairing","description":"Live backend interview"}
+    {"id":101,"name":"Backend Pairing","created_at":"2026-04-10T09:00:00Z","status":1,"user":4821,
+     "roles":["8b1o41tbpiq"],"team_share":1,"questions":["q1","q2"],"scorecard":98765,
+     "import_template":true,"editor_access":true}
     """#
 
     static let inviteTemplates = #"""

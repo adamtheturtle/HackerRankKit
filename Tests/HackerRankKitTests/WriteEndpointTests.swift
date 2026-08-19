@@ -188,25 +188,17 @@ struct WriteEndpointTests {
     func `createInterviewTemplate posts the typed template body`() async throws {
         let (client, recorder) = recordedClient()
         _ = try await client.createInterviewTemplate(
-            options: InterviewTemplateWriteOptions(
-                name: "Backend Template",
-                title: "Backend Pairing",
-                description: "Live interview",
-                questions: ["q1"],
-                tags: ["backend"],
-                metadata: ["source": .string("api")]
-            )
+            name: "Backend Template",
+            options: InterviewTemplateCreateOptions(roleID: "role-1", teamShare: 2, questionIDs: [1_939_659])
         )
 
         let sent = try sentRequest(recorder)
         #expect(sent.method == "POST")
         #expect(sent.path == "/x/api/v3/interview_templates")
         #expect(sent.body["name"] as? String == "Backend Template")
-        #expect(sent.body["title"] as? String == "Backend Pairing")
-        #expect(sent.body["description"] as? String == "Live interview")
-        #expect(sent.body["questions"] as? [String] == ["q1"])
-        #expect(sent.body["tags"] as? [String] == ["backend"])
-        #expect((sent.body["metadata"] as? [String: Any])?["source"] as? String == "api")
+        #expect(sent.body["role_id"] as? String == "role-1")
+        #expect(sent.body["team_share"] as? Int == 2)
+        #expect(sent.body["question_ids"] as? [Int] == [1_939_659])
     }
 
     @Test
@@ -214,16 +206,15 @@ struct WriteEndpointTests {
         let (client, recorder) = recordedClient()
         _ = try await client.updateInterviewTemplate(
             id: 101,
-            options: InterviewTemplateWriteOptions(name: "Renamed Template", description: "")
+            options: InterviewTemplateUpdateOptions(name: "Renamed Template", scorecardID: 98765)
         )
 
         let sent = try sentRequest(recorder)
         #expect(sent.method == "PUT")
         #expect(sent.path == "/x/api/v3/interview_templates/101")
         #expect(sent.body["name"] as? String == "Renamed Template")
-        // An explicit empty description is a clear, so it must survive onto the wire.
-        #expect(sent.body["description"] as? String == "")
-        #expect(sent.body["title"] == nil)
+        #expect(sent.body["scorecard_id"] as? Int == 98765)
+        #expect(sent.body["role_id"] == nil)
     }
 
     @Test

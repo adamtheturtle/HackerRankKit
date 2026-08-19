@@ -18,7 +18,7 @@ nonisolated enum MockResponses {
         if isNoContent(method: method, url: url) { return (204, Data()) }
         if method == "POST" || method == "PUT" || method == "PATCH" || method == "DELETE" {
             let status = method == "POST" ? 201 : 200
-            return (status, Data(writeAckBody(for: url).utf8))
+            return (status, Data(writeAckBody(for: url, method: method).utf8))
         }
         return (200, Data(body(for: url, query: query).utf8))
     }
@@ -86,14 +86,17 @@ nonisolated enum MockResponses {
     /// The acknowledgement body for a write, routed by path. Order matters: `/users`
     /// precedes `/teams` because a membership path contains both, and `/candidates`
     /// precedes `/tests` because an invite path contains both.
-    private static func writeAckBody(for url: URL) -> String {
+    private static func writeAckBody(for url: URL, method: String) -> String {
         let path = url.path
         if path.hasPrefix("/Users") { return MockFixtures.scimUser }
         if path.hasPrefix("/Groups") { return MockFixtures.scimGroup }
         if path.contains("/ats") { return MockFixtures.atsInvite }
         if path.contains("/candidates") { return MockFixtures.createdCandidate }
         if path.contains("/teams") && path.contains("/users") { return MockFixtures.teamMembership }
-        if path.contains("/interview_templates") { return MockFixtures.interviewTemplate }
+        if path.contains("/interview_templates") {
+            // A template delete answers with a message, not with the template record.
+            return method == "DELETE" ? MockFixtures.deletedInterviewTemplate : MockFixtures.interviewTemplate
+        }
         if path.contains("/users") { return MockFixtures.createdUser }
         if path.contains("/questions") {
             if path.hasSuffix("/generate") { return MockFixtures.generatedCodeStubs }
