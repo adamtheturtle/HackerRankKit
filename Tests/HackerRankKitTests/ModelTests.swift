@@ -161,6 +161,17 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `array-shaped candidate question scores decode too`() throws {
+        // The API keys these by question id; an array shape is tolerated rather than lost.
+        let json = #"""
+        {"id":"c1","questions":[{"question_id":"q9","score":10.0,"answered":false}]}
+        """#
+        let candidate = try decode(TestCandidate.self, json)
+        #expect(candidate.questionScores?.map(\.id) == ["q9"])
+        #expect(candidate.questionScores?.first?.answered == false)
+    }
+
+    @Test
     func `test inviter without email still decodes`() throws {
         let page = try decode(HackerRankPage<TestInviter>.self, #"{"data":[{"id":"u1"}],"next":null}"#)
         #expect(page.data.count == 1)

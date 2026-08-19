@@ -153,14 +153,33 @@ public nonisolated enum MockFixtures {
     """#
 
     /// The richer single-candidate read. It is intentionally one object, not the paged
-    /// `{"data":[...]}` envelope used by `/candidates`.
+    /// `{"data":[...]}` envelope used by `/candidates`, and it carries the invite,
+    /// integrity, and per-question fields the detail endpoint returns.
     static let candidateDetail = #"""
     {"id":"c1","email":"ada@example.com","full_name":"Ada Lovelace","score":92.0,
-     "percentage_score":92.0,"integrity_status":"clean","plagiarism_status":false,
+     "percentage_score":92.0,"integrity_status":"Low","plagiarism_status":false,
+     "integrity_summary":"No integrity signals detected.","user":"u1","test":"t1",
      "status":7,"ats_state":2,
      "report_url":"https://www.hackerrank.com/x/candidates/c1/report",
+     "authenticated_report_url":"https://www.hackerrank.com/x/candidates/c1/report?auth=1",
      "pdf_url":"https://www.hackerrank.com/x/candidates/c1/report.pdf",
      "attempt_starttime":"2026-05-02T10:00:00Z","attempt_endtime":"2026-05-02T11:15:00Z",
+     "attempt_events":[{"id":1,"event":1,"inserttime":"2026-05-02T10:00:00Z"}],
+     "invite_email_done":true,"invite_valid":true,"invited_on":"2026-05-01T09:00:00Z",
+     "invite_valid_from":"2026-05-01T09:00:00Z","invite_valid_to":"2026-05-08T09:00:00Z",
+     "invite_link":"https://www.hackerrank.com/tests/backend-screen/login?id=c1",
+     "invite_metadata":{"source":"careers-site"},"evaluator_email":"ian@example.com",
+     "test_finish_url":"https://example.com/thanks","test_result_url":"https://example.com/webhook",
+     "accept_result_updates":true,
+     "scores_tags_split":{"backend":60},"scores_skills_split":{"APIs":32},
+     "added_time":"30","unclaimed_added_time":10,
+     "comments":{"summary":"Strong candidate."},
+     "performance_summary":"Solved both questions comfortably within time.",
+     "ip_address":"203.0.113.7",
+     "questions":{"q1":{"score":50.0,"answered":true,"name":"Two Sum"},
+                  "q2":{"score":42.0,"answered":true,"name":"LRU Cache"}},
+     "candidate_details":[{"field_name":"university","title":"University","value":"Example University"}],
+     "proctor_images":["https://www.hackerrank.com/x/candidates/c1/proctor/1.jpg"],
      "tags":["shortlist","single-read"],"feedback":"Excellent problem decomposition.",
      "out_of_window_events":0,"out_of_window_duration":0.0,"editor_paste_count":1}
     """#

@@ -11,7 +11,7 @@ import Foundation
 // all-optional so a 2xx never fails to decode on an unexpected shape.
 
 /// A small JSON value tree for API fields whose schema is documented as a free-form object.
-public nonisolated enum HackerRankJSONValue: Codable, Sendable, Equatable {
+public nonisolated enum HackerRankJSONValue: Codable, Sendable, Hashable {
     case string(String)
     case int(Int)
     case double(Double)
