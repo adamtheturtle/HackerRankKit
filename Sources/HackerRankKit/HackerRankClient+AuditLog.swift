@@ -15,7 +15,7 @@ extension HackerRankClient {
         let url = try auditLogURL(cursor: cursor, userID: userID)
         let response = try await rest.performWithRetry(
             HackerRankPage<AuditLogEntry>.self,
-            request: rest.authorizedGET(url)
+            request: try authorizedGET(url)
         )
         return Page(items: response.data, next: response.next, totalCount: response.totalCount)
     }

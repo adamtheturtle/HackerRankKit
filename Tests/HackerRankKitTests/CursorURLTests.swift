@@ -91,6 +91,34 @@ struct CursorURLTests {
     }
 
     @Test
+    func `every read path rejects an unset token before any request`() async throws {
+        // These reads used to build the request through the transport directly, skipping
+        // the check: a tokenless client sent `Authorization: Bearer ` and reported the
+        // server's rejection instead of failing locally and predictably.
+        let tokenless = HackerRankClient(token: "", session: .shared)
+        let reads: [(String, () async throws -> Void)] = [
+            ("testsPage", { _ = try await tokenless.testsPage() }),
+            ("searchUsers", { _ = try await tokenless.searchUsers(query: "ada") }),
+            ("searchCandidates", { _ = try await tokenless.searchCandidates(query: "ada") }),
+            ("auditLogPage", { _ = try await tokenless.auditLogPage() }),
+            ("scimUsers", { _ = try await tokenless.scimUsers() }),
+            ("scimGroups", { _ = try await tokenless.scimGroups() }),
+            ("allUsers", { _ = try await tokenless.allUsers() })
+        ]
+
+        for (name, read) in reads {
+            do {
+                try await read()
+                Issue.record("\(name) should reject an unset token")
+            } catch HackerRankError.missingAPIKey {
+                // The expected local failure, before any network I/O.
+            } catch {
+                Issue.record("\(name) threw \(error), expected missingAPIKey")
+            }
+        }
+    }
+
+    @Test
     func `an unusable cursor still fails with a status-zero error naming the link`() {
         do {
             _ = try client.pageURL(path: "/x/api/v3/teams", cursor: "")

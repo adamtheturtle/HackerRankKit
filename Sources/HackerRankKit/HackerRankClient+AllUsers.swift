@@ -12,14 +12,21 @@ extension HackerRankClient {
     /// interviews — and the API exposes no name-search parameter, so loading the whole list is
     /// what lets People search match any user by name or email instead of only the first page. The
     /// first page gives the `total`; the rest are fetched concurrently (bounded, to stay gentle on
-    /// the rate limiter) and reassembled in offset order. Bounded by `maxUsers` so a pathologically
-    /// huge org can't drain unbounded; if `total` is absent it returns just the first page.
+    /// the rate limiter) and reassembled in offset order. At most `maxUsers` users are returned,
+    /// so a pathologically huge org can't drain unbounded; if `total` is absent it returns just
+    /// the first page.
     public func allUsers(maxUsers: Int = 6000) async throws -> [User] {
+        guard maxUsers > 0 else { return [] }
+
         let path = "\(Self.apiV3)/users"
         let first = try await offsetUsersPage(path: path, offset: 0)
         var all = first.data
+        // The bound is decided by the envelope's `total`, never by how many rows decoded.
+        // `HackerRankPage` drops individually malformed rows, so a first page that decodes
+        // to nothing does not mean the collection is empty — guarding on that abandoned
+        // every later offset even when the server reported thousands more users.
         let total = min(first.totalCount ?? all.count, maxUsers)
-        guard !all.isEmpty, total > Self.pageSize else { return all }
+        guard total > Self.pageSize else { return Array(all.prefix(maxUsers)) }
 
         // Offsets step by the page size we *requested*, never by how many records decoded.
         // `HackerRankPage` drops individually malformed rows, so `all.count` can be short of
@@ -47,7 +54,9 @@ extension HackerRankClient {
         for offset in offsets {
             all += byOffset[offset] ?? []
         }
-        return all
+        // `maxUsers` is a hard bound on what is returned, not just on which offsets are
+        // requested: pages arrive whole, so the last one fetched routinely overshoots it.
+        return Array(all.prefix(maxUsers))
     }
 
     /// Fetches one users page at an explicit `offset` (for the parallel `allUsers` fan-out).
@@ -56,6 +65,6 @@ extension HackerRankClient {
             URLQueryItem(name: "limit", value: String(Self.pageSize)),
             URLQueryItem(name: "offset", value: String(offset))
         ])
-        return try await rest.performWithRetry(HackerRankPage<User>.self, request: rest.authorizedGET(url))
+        return try await rest.performWithRetry(HackerRankPage<User>.self, request: try authorizedGET(url))
     }
 }
