@@ -9,14 +9,40 @@
 import Foundation
 
 nonisolated enum MockResponses {
+    /// The v3 API's path prefix, stripped before a route is matched by segment.
+    private static let apiV3 = "/x/api/v3"
+
     /// Routes a request to its status code and JSON body. Writes (create/update/delete)
     /// are acknowledged with a canned record; reads return the matching fixture.
     static func respond(method: String, url: URL, query: [String: String] = [:]) -> (Int, Data) {
+        if isNoContent(method: method, url: url) { return (204, Data()) }
         if method == "POST" || method == "PUT" || method == "PATCH" || method == "DELETE" {
             let status = method == "POST" ? 201 : 200
             return (status, Data(writeAckBody(for: url).utf8))
         }
         return (200, Data(body(for: url, query: query).utf8))
+    }
+
+    /// Whether the route is one the API documents as **204 No Content**. Answering these
+    /// with a canned JSON record is what let the client's decode-after-success failures go
+    /// unnoticed, so the fake returns the empty body the service actually returns.
+    private static func isNoContent(method: String, url: URL) -> Bool {
+        let path = url.path
+        let stripped = path.hasPrefix(apiV3) ? String(path.dropFirst(apiV3.count)) : path
+        let parts = stripped.split(separator: "/").map(String.init)
+        switch method {
+        case "POST":
+            // POST /tests/{id}/archive
+            return parts.count == 3 && parts[0] == "tests" && parts[2] == "archive"
+        case "DELETE":
+            // DELETE /tests/{id}, /users/{id}, and the SCIM /Users/{id} and /Groups/{id}.
+            if parts.count == 2, ["tests", "users", "Users", "Groups"].contains(parts[0]) { return true }
+
+            // DELETE /teams/{team_id}/users/{user_id}
+            return parts.count == 4 && parts[0] == "teams" && parts[2] == "users"
+        default:
+            return false
+        }
     }
 
     // MARK: - Read routing

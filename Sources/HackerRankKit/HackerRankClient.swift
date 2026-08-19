@@ -261,13 +261,13 @@ public struct HackerRankClient {
     }
 
     /// Archives a test (`POST /tests/{id}/archive`).
-    @discardableResult
-    public func archiveTest(testID: String) async throws -> CreatedTest {
-        try await send(
-            CreatedTest.self,
+    ///
+    /// The endpoint answers 204 No Content, so there is nothing to decode: returning
+    /// normally means the archive succeeded.
+    public func archiveTest(testID: String) async throws {
+        try await sendNoContent(
             method: "POST",
-            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/archive",
-            body: EmptyBody()
+            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))/archive"
         )
     }
 
@@ -289,14 +289,12 @@ public struct HackerRankClient {
 
     /// Permanently deletes a test (`DELETE /tests/{id}`). Destructive and irreversible,
     /// so a UI should confirm before this is called.
-    @discardableResult
-    public func deleteTest(testID: String) async throws -> CreatedTest {
-        try await send(
-            CreatedTest.self,
-            method: "DELETE",
-            path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))",
-            body: EmptyBody()
-        )
+    ///
+    /// The endpoint answers 204 No Content. Decoding a record from that empty body reported
+    /// failure *after* an irreversible deletion had already succeeded, which invites a
+    /// retry of something that cannot be retried.
+    public func deleteTest(testID: String) async throws {
+        try await sendNoContent(method: "DELETE", path: "\(Self.apiV3)/tests/\(Self.pathSegment(testID))")
     }
 
     /// The richer single-test read (`GET /tests/{id}`) backing a detail view. Adds the
@@ -783,14 +781,10 @@ public struct HackerRankClient {
     }
 
     /// Locks a user (`DELETE /users/{id}`).
-    @discardableResult
-    public func lockUser(id: String) async throws -> UserWriteResult {
-        try await send(
-            UserWriteResult.self,
-            method: "DELETE",
-            path: "\(Self.apiV3)/users/\(Self.pathSegment(id))",
-            body: EmptyBody()
-        )
+    ///
+    /// The endpoint answers 204 No Content, so returning normally means the user was locked.
+    public func lockUser(id: String) async throws {
+        try await sendNoContent(method: "DELETE", path: "\(Self.apiV3)/users/\(Self.pathSegment(id))")
     }
 
     /// The user the token belongs to (`GET /users/me`). Used to auto-discover an
@@ -888,13 +882,12 @@ public struct HackerRankClient {
 
     /// Removes a member from a team (`DELETE /teams/{id}/users/{userID}`). Destructive,
     /// so a UI should confirm before this is called.
-    @discardableResult
-    public func removeTeamMember(teamID: String, userID: String) async throws -> TeamMembershipResult {
-        try await send(
-            TeamMembershipResult.self,
+    ///
+    /// The endpoint answers 204 No Content, so returning normally means access was revoked.
+    public func removeTeamMember(teamID: String, userID: String) async throws {
+        try await sendNoContent(
             method: "DELETE",
-            path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))",
-            body: EmptyBody()
+            path: "\(Self.apiV3)/teams/\(Self.pathSegment(teamID))/users/\(Self.pathSegment(userID))"
         )
     }
 

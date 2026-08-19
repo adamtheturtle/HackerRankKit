@@ -178,4 +178,23 @@ struct WriteEndpointTests {
         #expect(sent.body["description"] as? String == "")
         #expect(sent.body["title"] == nil)
     }
+
+    @Test
+    func `the documented 204 writes succeed on an empty body`() async throws {
+        // Every one of these used to decode a record from the empty response and report
+        // `HackerRankError.decode` after the mutation had already been applied.
+        let (client, recorder) = RecordedClient.make { _ in (204, Data()) }
+        try await client.archiveTest(testID: "t1")
+        try await client.deleteTest(testID: "t1")
+        try await client.lockUser(id: "u1")
+        try await client.removeTeamMember(teamID: "tm1", userID: "u1")
+
+        #expect(recorder.requests.map { $0.httpMethod ?? "" } == ["POST", "DELETE", "DELETE", "DELETE"])
+        #expect(recorder.requests.compactMap(\.url?.path) == [
+            "/x/api/v3/tests/t1/archive",
+            "/x/api/v3/tests/t1",
+            "/x/api/v3/users/u1",
+            "/x/api/v3/teams/tm1/users/u1"
+        ])
+    }
 }
