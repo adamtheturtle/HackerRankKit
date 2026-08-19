@@ -314,6 +314,13 @@ struct MockServerTests {
         #expect(inviteTemplates.items.first?.id == "tpl-1")
         let inviteTemplate = try await client.inviteTemplate(id: "tpl-1")
         #expect(inviteTemplate.subject == "Your HackerRank invite")
+        // The message lives under `content`, and the status, timestamps, and owner come
+        // back with it.
+        #expect(inviteTemplate.content == "<p>Please complete the assessment.</p>")
+        #expect(inviteTemplate.isDefault == true)
+        #expect(inviteTemplate.createdAt == "2026-03-01T09:00:00Z")
+        #expect(inviteTemplate.updatedAt == "2026-04-01T09:00:00Z")
+        #expect(inviteTemplate.user == "u1")
 
         let ats = try await client.createATSCodeScreenInvite(
             testID: "t1",

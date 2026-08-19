@@ -23,6 +23,8 @@ public nonisolated struct AuditLogEntry: Decodable, Hashable, Identifiable, Send
     public let action: String?
     /// The names of the fields that changed.
     public let modifiedFields: [String]
+    /// The changed values themselves — the before/after context an audit trail is for.
+    public let modifiedValues: [String: HackerRankJSONValue]?
     /// The originating IP address, if recorded.
     public let ipAddress: String?
     /// ISO-8601 timestamp of the change.
@@ -34,14 +36,28 @@ public nonisolated struct AuditLogEntry: Decodable, Hashable, Identifiable, Send
         case user
         case action
         case modifiedFields = "modified_fields"
+        case modifiedValues = "modified_values"
         case ipAddress = "ip_address"
         case createdAt = "created_at"
     }
 
-    /// A stable identity built from the fields that together pin one entry, since the log has no
-    /// dedicated id. Good enough to keep rows distinct in a list.
+    /// A stable identity built from the fields that together pin one entry, since the log has
+    /// no dedicated id.
+    ///
+    /// Every field of the entry contributes, including the changed values: two distinct
+    /// changes to the same resource, with the same action at the same (often coarse)
+    /// timestamp, otherwise produced the same id and were merged or dropped by a list.
     public var id: String {
-        "\(sourceType ?? "")-\(sourceID ?? "")-\(action ?? "")-\(createdAt ?? "")"
+        [
+            sourceType ?? "",
+            sourceID ?? "",
+            action ?? "",
+            createdAt ?? "",
+            userLabel ?? "",
+            ipAddress ?? "",
+            modifiedFields.joined(separator: ","),
+            modifiedValues.map { HackerRankJSONValue.object($0).canonicalText } ?? ""
+        ].joined(separator: "-")
     }
 
     public nonisolated init(from decoder: any Decoder) throws {
@@ -50,6 +66,7 @@ public nonisolated struct AuditLogEntry: Decodable, Hashable, Identifiable, Send
         sourceType = container.loggedDecodeIfPresent(String.self, forKey: .sourceType)
         action = container.loggedDecodeIfPresent(String.self, forKey: .action)
         modifiedFields = (container.loggedDecodeIfPresent([String].self, forKey: .modifiedFields)) ?? []
+        modifiedValues = container.loggedDecodeIfPresent([String: HackerRankJSONValue].self, forKey: .modifiedValues)
         ipAddress = container.loggedDecodeIfPresent(String.self, forKey: .ipAddress)
         createdAt = container.loggedDecodeIfPresent(String.self, forKey: .createdAt)
         userLabel = (container.loggedDecodeIfPresent(InterviewPerson.self, forKey: .user))?.displayName

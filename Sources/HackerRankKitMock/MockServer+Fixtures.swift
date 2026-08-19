@@ -283,13 +283,13 @@ public nonisolated enum MockFixtures {
 
     static let inviteTemplates = #"""
     {"data":[
-      {"id":"tpl-1","name":"Default Invite","subject":"Your HackerRank invite","body":"Please complete the assessment.","access":"company"},
-      {"id":"tpl-2","name":"Reminder","subject":"Reminder","access":"private"}
+      {"id":"tpl-1","name":"Default Invite","subject":"Your HackerRank invite","content":"<p>Please complete the assessment.</p>","default":true,"created_at":"2026-03-01T09:00:00Z","updated_at":"2026-04-01T09:00:00Z","user":"u1"},
+      {"id":"tpl-2","name":"Reminder","subject":"Reminder","content":"<p>A reminder.</p>","default":false,"created_at":"2026-03-05T09:00:00Z","updated_at":"2026-03-05T09:00:00Z","user":"u1"}
     ],"next":null}
     """#
 
     static let inviteTemplate = #"""
-    {"id":"tpl-1","name":"Default Invite","subject":"Your HackerRank invite","body":"Please complete the assessment.","access":"company"}
+    {"id":"tpl-1","name":"Default Invite","subject":"Your HackerRank invite","content":"<p>Please complete the assessment.</p>","default":true,"created_at":"2026-03-01T09:00:00Z","updated_at":"2026-04-01T09:00:00Z","user":"u1"}
     """#
 
     // MARK: - SCIM provisioning
@@ -438,12 +438,16 @@ public nonisolated enum MockFixtures {
     static let auditLog = #"""
     {"data":[
       {"source_id":"t1","source_type":"test","action":"update",
-       "user":4821,
-       "modified_fields":["name","cutoff_score"],"ip_address":"203.0.113.7",
+       "user":{"firstname":"Rhea","lastname":"Recruiter","email":"rhea@example.com"},
+       "modified_fields":["name","cutoff_score"],
+       "modified_values":{"name":"Backend Engineer Screen","cutoff_score":70},
+       "ip_address":"203.0.113.7",
        "created_at":"2026-06-20T09:15:00Z"},
       {"source_id":"u3","source_type":"user","action":"create",
-       "user":4821,
-       "modified_fields":["email","role"],"ip_address":"203.0.113.7",
+       "user":{"firstname":"Rhea","lastname":"Recruiter","email":"rhea@example.com"},
+       "modified_fields":["email","role"],
+       "modified_values":{"email":"pat@example.com","role":"recruiter"},
+       "ip_address":"203.0.113.7",
        "created_at":"2026-06-19T16:42:00Z"},
       {"source_id":1024,"source_type":"interview","action":"delete",
        "user":"ian@example.com","modified_fields":[],"ip_address":"198.51.100.22",

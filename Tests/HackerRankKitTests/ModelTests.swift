@@ -233,6 +233,27 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `audit entries with the same action and timestamp stay distinct`() throws {
+        // Two changes to one test, in the same second, touching different fields: these
+        // used to share an id and be merged or dropped by a list.
+        let firstJSON = #"""
+        {"source_id":1,"source_type":"test","action":"update","created_at":"2026-06-20T09:15:00Z",
+         "modified_fields":["name"],"modified_values":{"name":"Screen"}}
+        """#
+        let first = try decode(AuditLogEntry.self, firstJSON)
+        let second = try decode(AuditLogEntry.self, #"""
+        {"source_id":1,"source_type":"test","action":"update","created_at":"2026-06-20T09:15:00Z",
+         "modified_fields":["cutoff_score"],"modified_values":{"cutoff_score":70}}
+        """#)
+
+        #expect(first.id != second.id)
+        #expect(first.modifiedValues?["name"] == .string("Screen"))
+        #expect(second.modifiedValues?["cutoff_score"] == .int(70))
+        // The identity is deterministic, not a per-process hash.
+        #expect(first.id == (try decode(AuditLogEntry.self, firstJSON)).id)
+    }
+
+    @Test
     func `audit log accepts a numeric source id`() throws {
         let entry = try decode(AuditLogEntry.self, #"{"source_id":42,"source_type":"test","action":"update"}"#)
         #expect(entry.sourceID == "42")
