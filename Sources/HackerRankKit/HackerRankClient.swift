@@ -428,13 +428,17 @@ public struct HackerRankClient {
     }
 
     /// Generates code stubs for a coding question (`PUT /questions/{id}/generate`).
+    ///
+    /// Returns the generated templates. The endpoint answers with the signature it used and
+    /// one head/body/tail template per requested language — none of which is a status
+    /// acknowledgement, so decoding one discarded every generated stub.
     @discardableResult
     public func generateCodeStubs(
         questionID: String,
         options: CodeStubGenerationOptions = CodeStubGenerationOptions()
-    ) async throws -> QuestionOperationResult {
+    ) async throws -> GeneratedCodeStubs {
         try await send(
-            QuestionOperationResult.self,
+            GeneratedCodeStubs.self,
             method: "PUT",
             path: "\(Self.apiV3)/questions/\(Self.pathSegment(questionID))/generate",
             body: GenerateCodeStubsRequest(options: options)
