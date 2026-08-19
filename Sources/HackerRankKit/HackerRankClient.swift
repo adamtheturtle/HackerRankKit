@@ -254,9 +254,26 @@ public struct HackerRankClient {
     }
 
     /// Creates a test (`POST /tests`).
+    ///
+    /// `duration`, `roleIDs`, and `experience` are parameters rather than options because
+    /// `TestsCreate` requires them alongside the name: a body carrying only a name is
+    /// rejected by the live API. Any values `options` also carries for those three fields
+    /// apply to updates only and are not sent here.
     @discardableResult
-    public func createTest(name: String, options: TestWriteOptions = TestWriteOptions()) async throws -> CreatedTest {
-        let body = CreateTestRequest(name: name.trimmingCharacters(in: .whitespacesAndNewlines), options: options)
+    public func createTest(
+        name: String,
+        duration: Int,
+        roleIDs: [String],
+        experience: [String],
+        options: TestWriteOptions = TestWriteOptions()
+    ) async throws -> CreatedTest {
+        let body = CreateTestRequest(
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            duration: duration,
+            roleIDs: roleIDs,
+            experience: experience,
+            options: options
+        )
         return try await send(CreatedTest.self, method: "POST", path: "\(Self.apiV3)/tests", body: body)
     }
 

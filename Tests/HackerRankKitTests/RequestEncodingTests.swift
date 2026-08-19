@@ -98,32 +98,19 @@ struct RequestEncodingTests {
     }
 
     @Test
-    func `minimal test create only encodes name`() throws {
-        let request = CreateTestRequest(name: "Backend Screen", options: TestWriteOptions())
-
-        let object = try encodedObject(request)
-        #expect(object["name"] as? String == "Backend Screen")
-        #expect(object["duration"] == nil)
-        #expect(object["cutoff_score"] == nil)
-        #expect(object.count == 1)
-    }
-
-    @Test
     func `rich test create encodes snake case optional fields`() throws {
         let request = CreateTestRequest(
             name: "Backend Screen",
+            duration: 90,
+            roleIDs: ["role-be"],
+            experience: ["Senior"],
             options: TestWriteOptions(
-                duration: 90,
                 cutoffScore: 70,
                 instructions: "Solve all questions.",
                 startTime: "2026-07-10T09:00:00Z",
                 endTime: "2026-07-17T09:00:00Z",
                 languages: ["python", "go"],
                 tags: ["backend", "screening"],
-                library: "HackerRank",
-                role: "Backend Engineer",
-                skills: ["APIs", "Data Structures"],
-                type: "Screen",
                 questions: ["q1", "q2"],
                 shuffleQuestions: true,
                 enableProctoring: false
@@ -133,19 +120,62 @@ struct RequestEncodingTests {
         let object = try encodedObject(request)
         #expect(object["name"] as? String == "Backend Screen")
         #expect(object["duration"] as? Int == 90)
+        #expect(object["role_ids"] as? [String] == ["role-be"])
+        #expect(object["experience"] as? [String] == ["Senior"])
         #expect(object["cutoff_score"] as? Int == 70)
         #expect(object["instructions"] as? String == "Solve all questions.")
-        #expect(object["start_time"] as? String == "2026-07-10T09:00:00Z")
-        #expect(object["end_time"] as? String == "2026-07-17T09:00:00Z")
+        // The schema spells the assessment window `starttime`/`endtime`, without underscores.
+        #expect(object["starttime"] as? String == "2026-07-10T09:00:00Z")
+        #expect(object["endtime"] as? String == "2026-07-17T09:00:00Z")
+        #expect(object["start_time"] == nil)
+        #expect(object["end_time"] == nil)
         #expect(object["languages"] as? [String] == ["python", "go"])
         #expect(object["tags"] as? [String] == ["backend", "screening"])
-        #expect(object["library"] as? String == "HackerRank")
-        #expect(object["role"] as? String == "Backend Engineer")
-        #expect(object["skills"] as? [String] == ["APIs", "Data Structures"])
-        #expect(object["type"] as? String == "Screen")
         #expect(object["questions"] as? [String] == ["q1", "q2"])
         #expect(object["shuffle_questions"] as? Bool == true)
         #expect(object["enable_proctoring"] as? Bool == false)
+    }
+
+    @Test
+    func `test create always sends the schema's required fields`() throws {
+        // `TestsCreate` requires name, duration, role_ids and experience; a name-only body
+        // is rejected by the live API.
+        let request = CreateTestRequest(
+            name: "Screen", duration: 45, roleIDs: ["r1"], experience: ["Mid"], options: TestWriteOptions()
+        )
+
+        let object = try encodedObject(request)
+        #expect(Set(object.keys) == ["name", "duration", "role_ids", "experience"])
+    }
+
+    @Test
+    func `a create ignores the option copies of its required fields`() throws {
+        // The explicit parameters are the contract; an option value must not contradict them.
+        let request = CreateTestRequest(
+            name: "Screen",
+            duration: 45,
+            roleIDs: ["r1"],
+            experience: ["Mid"],
+            options: TestWriteOptions(duration: 999, roleIDs: ["other"], experience: ["Junior"])
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["duration"] as? Int == 45)
+        #expect(object["role_ids"] as? [String] == ["r1"])
+        #expect(object["experience"] as? [String] == ["Mid"])
+    }
+
+    @Test
+    func `a test update can set the fields a create requires`() throws {
+        let request = UpdateTestRequest(
+            name: "Screen",
+            options: TestWriteOptions(duration: 30, roleIDs: ["r2"], experience: ["Staff"])
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["duration"] as? Int == 30)
+        #expect(object["role_ids"] as? [String] == ["r2"])
+        #expect(object["experience"] as? [String] == ["Staff"])
     }
 
     @Test
@@ -156,18 +186,16 @@ struct RequestEncodingTests {
                 instructions: " ",
                 languages: ["python", ""],
                 tags: [],
-                role: "\n",
-                skills: ["APIs", "  "],
+                roleIDs: ["r1", "  "],
                 questions: ["q1", ""]
             )
         )
 
         let object = try encodedObject(request)
         #expect(object["instructions"] == nil)
-        #expect(object["role"] == nil)
         #expect(object["tags"] as? [String] == [])
         #expect(object["languages"] as? [String] == ["python"])
-        #expect(object["skills"] as? [String] == ["APIs"])
+        #expect(object["role_ids"] as? [String] == ["r1"])
         #expect(object["questions"] as? [String] == ["q1"])
 
         let clearObject = try encodedObject(UpdateTestRequest(

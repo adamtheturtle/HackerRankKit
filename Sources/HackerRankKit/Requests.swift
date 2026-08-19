@@ -919,109 +919,113 @@ public nonisolated struct QuestionTestcaseOptions: Sendable, Equatable {
 }
 
 /// The body sent when creating a test.
+///
+/// `TestsCreate` requires `name`, `duration`, `role_ids`, and `experience`, so those four
+/// are stored separately from the optional ``TestWriteOptions`` and always encoded.
 nonisolated struct CreateTestRequest: Encodable {
     let name: String
+    let duration: Int
+    let roleIDs: [String]
+    let experience: [String]
     let options: TestWriteOptions
 }
 
-/// The body sent when renaming a test.
+/// The body sent when updating a test. Every field beyond the name is optional here: an
+/// update sends only what should change.
 nonisolated struct UpdateTestRequest: Encodable {
     let name: String
     let options: TestWriteOptions
 }
 
-extension CreateTestRequest {
-    enum CodingKeys: String, CodingKey {
-        case name
-        case duration
-        case cutoffScore = "cutoff_score"
-        case instructions
-        case startTime = "start_time"
-        case endTime = "end_time"
-        case languages
-        case tags
-        case library
-        case role
-        case skills
-        case type
-        case questions
-        case shuffleQuestions = "shuffle_questions"
-        case enableProctoring = "enable_proctoring"
-    }
+/// The wire keys shared by the assessment create and update bodies. Only fields defined by
+/// the official `TestsCreate`/`TestsUpdate` schemas appear: an option the server does not
+/// accept would be silently dropped while the caller believed it applied.
+private enum TestWriteCodingKeys: String, CodingKey {
+    case name
+    case duration
+    case cutoffScore = "cutoff_score"
+    case instructions
+    case startTime = "starttime"
+    case endTime = "endtime"
+    case languages
+    case tags
+    case roleIDs = "role_ids"
+    case experience
+    case questions
+    case shuffleQuestions = "shuffle_questions"
+    case enableProctoring = "enable_proctoring"
+}
 
+extension CreateTestRequest {
     nonisolated func encode(to encoder: any Encoder) throws {
-        try encodeTestWriteBody(to: encoder, name: name, options: options)
+        var container = encoder.container(keyedBy: TestWriteCodingKeys.self)
+        try container.encode(duration, forKey: .duration)
+        try container.encode(roleIDs, forKey: .roleIDs)
+        try container.encode(experience, forKey: .experience)
+        try encodeTestWriteBody(to: &container, name: name, options: options, skippingRequired: true)
     }
 }
 
 extension UpdateTestRequest {
-    enum CodingKeys: String, CodingKey {
-        case name
-        case duration
-        case cutoffScore = "cutoff_score"
-        case instructions
-        case startTime = "start_time"
-        case endTime = "end_time"
-        case languages
-        case tags
-        case library
-        case role
-        case skills
-        case type
-        case questions
-        case shuffleQuestions = "shuffle_questions"
-        case enableProctoring = "enable_proctoring"
-    }
-
     nonisolated func encode(to encoder: any Encoder) throws {
-        try encodeTestWriteBody(to: encoder, name: name, options: options)
+        var container = encoder.container(keyedBy: TestWriteCodingKeys.self)
+        try encodeTestWriteBody(to: &container, name: name, options: options, skippingRequired: false)
     }
 }
 
-private nonisolated func encodeTestWriteBody(to encoder: any Encoder, name: String, options: TestWriteOptions) throws {
-    var container = encoder.container(keyedBy: CreateTestRequest.CodingKeys.self)
+/// Encodes the name plus whichever options are set. `skippingRequired` omits the three
+/// fields a create has already encoded from its own required parameters, so an option
+/// value can never contradict the one the caller passed explicitly.
+private nonisolated func encodeTestWriteBody(
+    to container: inout KeyedEncodingContainer<TestWriteCodingKeys>,
+    name: String,
+    options: TestWriteOptions,
+    skippingRequired: Bool
+) throws {
     try container.encode(name, forKey: .name)
-    try container.encodeIfPresent(options.duration, forKey: .duration)
     try container.encodeIfPresent(options.cutoffScore, forKey: .cutoffScore)
     try container.encodeIfPresent(options.instructions, forKey: .instructions)
     try container.encodeIfPresent(options.startTime, forKey: .startTime)
     try container.encodeIfPresent(options.endTime, forKey: .endTime)
     try container.encodeIfPresent(options.languages, forKey: .languages)
     try container.encodeIfPresent(options.tags, forKey: .tags)
-    try container.encodeIfPresent(options.library, forKey: .library)
-    try container.encodeIfPresent(options.role, forKey: .role)
-    try container.encodeIfPresent(options.skills, forKey: .skills)
-    try container.encodeIfPresent(options.type, forKey: .type)
     try container.encodeIfPresent(options.questions, forKey: .questions)
     try container.encodeIfPresent(options.shuffleQuestions, forKey: .shuffleQuestions)
     try container.encodeIfPresent(options.enableProctoring, forKey: .enableProctoring)
+    guard !skippingRequired else { return }
+
+    try container.encodeIfPresent(options.duration, forKey: .duration)
+    try container.encodeIfPresent(options.roleIDs, forKey: .roleIDs)
+    try container.encodeIfPresent(options.experience, forKey: .experience)
 }
 
 /// Optional fields for creating or updating an assessment. Values are omitted when unset,
-/// so the existing name-only create/update calls stay minimal.
+/// so an update sends only what should change.
+///
+/// Only fields the official `TestsCreate`/`TestsUpdate` schemas define are modelled. The
+/// assessment `library`, `skills`, and `type` values a response may carry are **not**
+/// writable and are deliberately absent here.
 public nonisolated struct TestWriteOptions: Sendable, Equatable {
-    /// Duration of the assessment in minutes.
+    /// Duration of the assessment in minutes. Required on a create, where
+    /// ``HackerRankClient/createTest(name:duration:roleIDs:experience:options:)`` takes it
+    /// as its own parameter; set it here to change an existing assessment's duration.
     public let duration: Int?
     /// Passing score threshold.
     public let cutoffScore: Int?
     /// Candidate-facing instructions.
     public let instructions: String?
-    /// ISO-8601 assessment window start.
+    /// ISO-8601 assessment window start (the wire key is `starttime`).
     public let startTime: String?
-    /// ISO-8601 assessment window end.
+    /// ISO-8601 assessment window end (the wire key is `endtime`).
     public let endTime: String?
     /// Allowed programming languages.
     public let languages: [String]?
     /// Tags to attach to the assessment.
     public let tags: [String]?
-    /// Source library/collection metadata.
-    public let library: String?
-    /// Hiring role metadata.
-    public let role: String?
-    /// Skills assessed by the test.
-    public let skills: [String]?
-    /// Assessment type/category.
-    public let type: String?
+    /// Identifiers of the hiring roles the assessment targets. Required on a create.
+    public let roleIDs: [String]?
+    /// Experience levels the assessment targets. Required on a create.
+    public let experience: [String]?
     /// Question identifiers included in the assessment.
     public let questions: [String]?
     /// Whether question order should be shuffled.
@@ -1037,10 +1041,8 @@ public nonisolated struct TestWriteOptions: Sendable, Equatable {
         endTime: String? = nil,
         languages: [String]? = nil,
         tags: [String]? = nil,
-        library: String? = nil,
-        role: String? = nil,
-        skills: [String]? = nil,
-        type: String? = nil,
+        roleIDs: [String]? = nil,
+        experience: [String]? = nil,
         questions: [String]? = nil,
         shuffleQuestions: Bool? = nil,
         enableProctoring: Bool? = nil
@@ -1054,10 +1056,8 @@ public nonisolated struct TestWriteOptions: Sendable, Equatable {
         // "clear this field" on assessment updates.
         self.languages = Self.cleanClearableList(languages)
         self.tags = Self.cleanClearableList(tags)
-        self.library = Self.nonBlank(library)
-        self.role = Self.nonBlank(role)
-        self.skills = Self.cleanList(skills)
-        self.type = Self.nonBlank(type)
+        self.roleIDs = Self.cleanClearableList(roleIDs)
+        self.experience = Self.cleanClearableList(experience)
         self.questions = Self.cleanList(questions)
         self.shuffleQuestions = shuffleQuestions
         self.enableProctoring = enableProctoring
