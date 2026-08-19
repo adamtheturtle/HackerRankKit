@@ -7,9 +7,9 @@ import Foundation
 
 /// A HackerRank for Work test (assessment).
 ///
-/// Fields mirror the HackerRank for Work API's test resource. Only the fields a
-/// read-only UI typically needs are modelled; `Decodable` ignores any other keys in the
-/// response, so this decodes live responses without failing on unmodelled fields.
+/// Fields mirror the HackerRank for Work API's test resource (`TestsIndex`/`TestsShow`).
+/// `Decodable` ignores any other keys in the response, so this decodes live responses
+/// without failing on unmodelled fields.
 ///
 /// `nonisolated` so the model can be decoded off the main actor by the REST client
 /// (the target builds with MainActor default actor isolation).
@@ -20,9 +20,9 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
     public let uniqueID: String?
     /// The test's display name.
     public let name: String
-    /// ISO-8601 start time of the test window.
+    /// ISO-8601 start time of the test window (the wire key is `starttime`).
     public let startTime: String?
-    /// ISO-8601 end time of the test window.
+    /// ISO-8601 end time of the test window (the wire key is `endtime`).
     public let endTime: String?
     /// Duration of the test in minutes.
     public let duration: Int?
@@ -38,37 +38,63 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
     public let state: String?
     /// Whether the test is locked.
     public let locked: Bool?
+    /// Identifier of the user who locked the test, when it is locked.
+    public let lockedBy: String?
     /// Whether the test is still a draft.
     public let draft: Bool?
     /// Programming languages allowed in the test.
     public let languages: [String]?
+    /// The details a candidate is asked for before logging into the test.
+    public let candidateDetails: [String]?
+    /// Text the candidate must acknowledge before logging into the test.
+    public let customAcknowledgeText: String?
     /// The score at or above which a candidate passes.
     public let cutoffScore: Int?
+    /// Whether the compile button is hidden for coding questions.
+    public let hideCompileTest: Bool?
     /// Tags applied to the test.
     public let tags: [String]?
+    /// Identifiers of the hiring roles this test targets.
+    public let roleIDs: [String]?
+    /// Experience levels associated with the test.
+    public let experience: [String]?
     /// The source library or collection this test belongs to, when reported by the API.
     public let library: String?
-    /// The hiring role or job family this test targets, when reported by the API.
-    public let role: String?
     /// Skills assessed by the test, when reported by the API.
     public let skills: [String]?
     /// The test category or assessment type, when reported by the API.
     public let type: String?
     /// Identifiers of the questions in the test.
     public let questions: [String]?
-    /// Whether question order is shuffled per candidate.
-    public let shuffleQuestions: Bool?
-    /// Whether proctoring is enabled for the test.
-    public let enableProctoring: Bool?
     /// The test's question sections, when it is organised into them.
     public let sections: [TestSection]?
+    /// Whether question order is shuffled per candidate.
+    public let shuffleQuestions: Bool?
+    /// Identifiers of the users who administer the test and receive its summary reports.
+    public let testAdmins: [String]?
+    /// Whether head and tail code templates are hidden from candidates.
+    public let hideTemplate: Bool?
+    /// Whether the candidate is asked to agree to the acknowledgement text.
+    public let enableAcknowledgement: Bool?
+    /// Whether proctoring is enabled for the test.
+    public let enableProctoring: Bool?
+    /// Whether candidate webcam snapshots are analysed for suspicious activity.
+    public let enableAdvancedProctoring: Bool?
+    /// Whether the test runs in HackerRank's secure assessment mode.
+    public let enableSecureAssessmentMode: Bool?
+    /// Whether machine-learning plagiarism analysis is enabled for the test.
+    public let enableMLPlagiarismAnalysis: Bool?
+    /// Whether candidates must take an identifying photo before starting.
+    public let enablePhotoIdentification: Bool?
+    /// The IDE configuration offered to candidates for front-end/back-end/full-stack questions.
+    public let ideConfig: String?
 
     enum CodingKeys: String, CodingKey {
         case id
         case uniqueID = "unique_id"
         case name
-        case startTime = "start_time"
-        case endTime = "end_time"
+        case startTime = "starttime"
+        case endTime = "endtime"
         case duration
         case owner
         case instructions
@@ -76,18 +102,31 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
         case createdAt = "created_at"
         case state
         case locked
+        case lockedBy = "locked_by"
         case draft
         case languages
+        case candidateDetails = "candidate_details"
+        case customAcknowledgeText = "custom_acknowledge_text"
         case cutoffScore = "cutoff_score"
+        case hideCompileTest = "hide_compile_test"
         case tags
+        case roleIDs = "role_ids"
+        case experience
         case library
-        case role
         case skills
         case type
         case questions
-        case shuffleQuestions = "shuffle_questions"
-        case enableProctoring = "enable_proctoring"
         case sections
+        case shuffleQuestions = "shuffle_questions"
+        case testAdmins = "test_admins"
+        case hideTemplate = "hide_template"
+        case enableAcknowledgement = "enable_acknowledgement"
+        case enableProctoring = "enable_proctoring"
+        case enableAdvancedProctoring = "enable_advanced_proctoring"
+        case enableSecureAssessmentMode = "enable_secure_assessment_mode"
+        case enableMLPlagiarismAnalysis = "enable_ml_plagiarism_analysis"
+        case enablePhotoIdentification = "enable_photo_identification"
+        case ideConfig = "ide_config"
     }
 
     public init(
@@ -103,18 +142,31 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
         createdAt: String? = nil,
         state: String? = nil,
         locked: Bool? = nil,
+        lockedBy: String? = nil,
         draft: Bool? = nil,
         languages: [String]? = nil,
+        candidateDetails: [String]? = nil,
+        customAcknowledgeText: String? = nil,
         cutoffScore: Int? = nil,
+        hideCompileTest: Bool? = nil,
         tags: [String]? = nil,
+        roleIDs: [String]? = nil,
+        experience: [String]? = nil,
         library: String? = nil,
-        role: String? = nil,
         skills: [String]? = nil,
         type: String? = nil,
         questions: [String]? = nil,
+        sections: [TestSection]? = nil,
         shuffleQuestions: Bool? = nil,
+        testAdmins: [String]? = nil,
+        hideTemplate: Bool? = nil,
+        enableAcknowledgement: Bool? = nil,
         enableProctoring: Bool? = nil,
-        sections: [TestSection]? = nil
+        enableAdvancedProctoring: Bool? = nil,
+        enableSecureAssessmentMode: Bool? = nil,
+        enableMLPlagiarismAnalysis: Bool? = nil,
+        enablePhotoIdentification: Bool? = nil,
+        ideConfig: String? = nil
     ) {
         self.id = id
         self.uniqueID = uniqueID
@@ -128,18 +180,77 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
         self.createdAt = createdAt
         self.state = state
         self.locked = locked
+        self.lockedBy = lockedBy
         self.draft = draft
         self.languages = languages
+        self.candidateDetails = candidateDetails
+        self.customAcknowledgeText = customAcknowledgeText
         self.cutoffScore = cutoffScore
+        self.hideCompileTest = hideCompileTest
         self.tags = tags
+        self.roleIDs = roleIDs
+        self.experience = experience
         self.library = library
-        self.role = role
         self.skills = skills
         self.type = type
         self.questions = questions
-        self.shuffleQuestions = shuffleQuestions
-        self.enableProctoring = enableProctoring
         self.sections = sections
+        self.shuffleQuestions = shuffleQuestions
+        self.testAdmins = testAdmins
+        self.hideTemplate = hideTemplate
+        self.enableAcknowledgement = enableAcknowledgement
+        self.enableProctoring = enableProctoring
+        self.enableAdvancedProctoring = enableAdvancedProctoring
+        self.enableSecureAssessmentMode = enableSecureAssessmentMode
+        self.enableMLPlagiarismAnalysis = enableMLPlagiarismAnalysis
+        self.enablePhotoIdentification = enablePhotoIdentification
+        self.ideConfig = ideConfig
+    }
+}
+
+extension Test {
+    /// Decodes resiliently. Only `id` and `name` identify an assessment; every other field is
+    /// read through ``KeyedDecodingContainer/loggedDecodeIfPresent(_:forKey:)`` so one
+    /// unexpected value never drops the whole test from a page.
+    public nonisolated init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        uniqueID = container.loggedDecodeIfPresent(String.self, forKey: .uniqueID)
+        startTime = container.loggedDecodeIfPresent(String.self, forKey: .startTime)
+        endTime = container.loggedDecodeIfPresent(String.self, forKey: .endTime)
+        duration = container.loggedDecodeIfPresent(Int.self, forKey: .duration)
+        owner = container.loggedDecodeIfPresent(String.self, forKey: .owner)
+        instructions = container.loggedDecodeIfPresent(String.self, forKey: .instructions)
+        starred = container.loggedDecodeIfPresent(Bool.self, forKey: .starred)
+        createdAt = container.loggedDecodeIfPresent(String.self, forKey: .createdAt)
+        state = container.loggedDecodeIfPresent(String.self, forKey: .state)
+        locked = container.loggedDecodeIfPresent(Bool.self, forKey: .locked)
+        lockedBy = container.loggedDecodeIfPresent(String.self, forKey: .lockedBy)
+        draft = container.loggedDecodeIfPresent(Bool.self, forKey: .draft)
+        languages = container.loggedDecodeIfPresent([String].self, forKey: .languages)
+        candidateDetails = container.loggedDecodeIfPresent([String].self, forKey: .candidateDetails)
+        customAcknowledgeText = container.loggedDecodeIfPresent(String.self, forKey: .customAcknowledgeText)
+        cutoffScore = container.loggedDecodeIfPresent(Int.self, forKey: .cutoffScore)
+        hideCompileTest = container.loggedDecodeIfPresent(Bool.self, forKey: .hideCompileTest)
+        tags = container.loggedDecodeIfPresent([String].self, forKey: .tags)
+        roleIDs = container.loggedDecodeIfPresent([String].self, forKey: .roleIDs)
+        experience = container.loggedDecodeIfPresent([String].self, forKey: .experience)
+        library = container.loggedDecodeIfPresent(String.self, forKey: .library)
+        skills = container.loggedDecodeIfPresent([String].self, forKey: .skills)
+        type = container.loggedDecodeIfPresent(String.self, forKey: .type)
+        questions = container.loggedDecodeIfPresent([String].self, forKey: .questions)
+        sections = TestSection.decodeSlots(from: container, forKey: .sections)
+        shuffleQuestions = container.loggedDecodeIfPresent(Bool.self, forKey: .shuffleQuestions)
+        testAdmins = container.loggedDecodeIfPresent([String].self, forKey: .testAdmins)
+        hideTemplate = container.loggedDecodeIfPresent(Bool.self, forKey: .hideTemplate)
+        enableAcknowledgement = container.loggedDecodeIfPresent(Bool.self, forKey: .enableAcknowledgement)
+        enableProctoring = container.loggedDecodeIfPresent(Bool.self, forKey: .enableProctoring)
+        enableAdvancedProctoring = container.loggedDecodeIfPresent(Bool.self, forKey: .enableAdvancedProctoring)
+        enableSecureAssessmentMode = container.loggedDecodeIfPresent(Bool.self, forKey: .enableSecureAssessmentMode)
+        enableMLPlagiarismAnalysis = container.loggedDecodeIfPresent(Bool.self, forKey: .enableMLPlagiarismAnalysis)
+        enablePhotoIdentification = container.loggedDecodeIfPresent(Bool.self, forKey: .enablePhotoIdentification)
+        ideConfig = container.loggedDecodeIfPresent(String.self, forKey: .ideConfig)
     }
 }
 
@@ -151,7 +262,7 @@ extension Test {
     }
 
     public var roleFilterValues: [String] {
-        let explicit = cleanFilterValues([role])
+        let explicit = cleanFilterValues((roleIDs ?? []).map(Optional.some))
         guard explicit.isEmpty else { return explicit }
 
         return cleanFilterValues((tags ?? []).map(Optional.some))
@@ -190,7 +301,8 @@ extension Test {
 ///
 /// Both `uuid` and `name` are optional: live responses include sections that omit one or
 /// both (e.g. an unnamed, ad-hoc section), and a single such section must not fail the whole
-/// `Test` (and with it the entire Tests page). `id` falls back through the available fields.
+/// `Test` (and with it the entire Tests page). `id` falls back through the available fields,
+/// ending at ``slot`` so two unnamed sections never share an identity.
 public nonisolated struct TestSection: Codable, Hashable, Identifiable, Sendable {
     /// Stable identifier of the section, when the API provides one.
     public let uuid: String?
@@ -200,9 +312,21 @@ public nonisolated struct TestSection: Codable, Hashable, Identifiable, Sendable
     public let questionCount: Int?
     /// The section's time limit in minutes, if it has its own.
     public let duration: Int?
+    /// The section's slot within the test's `sections` field: the documented object's key, or
+    /// the section's position when a deployment returns the field as an array. Assigned by
+    /// ``Test``'s decoder rather than read from a wire key of its own.
+    public let slot: String?
 
+    /// A stable identity. The server's `uuid` when it has one, otherwise the section's slot
+    /// (qualified by its name when it has one) so unnamed sections stay distinct.
     public var id: String {
-        uuid ?? name ?? "section"
+        if let uuid, !uuid.isEmpty { return uuid }
+        if let slot, !slot.isEmpty {
+            guard let name, !name.isEmpty else { return slot }
+
+            return "\(slot)-\(name)"
+        }
+        return name ?? "section"
     }
 
     /// The name to show, falling back to a generic label when the section is unnamed.
@@ -215,13 +339,55 @@ public nonisolated struct TestSection: Codable, Hashable, Identifiable, Sendable
         case name
         case questionCount = "questions"
         case duration
+        case slot
     }
 
-    public init(uuid: String? = nil, name: String? = nil, questionCount: Int? = nil, duration: Int? = nil) {
+    public init(
+        uuid: String? = nil,
+        name: String? = nil,
+        questionCount: Int? = nil,
+        duration: Int? = nil,
+        slot: String? = nil
+    ) {
         self.uuid = uuid
         self.name = name
         self.questionCount = questionCount
         self.duration = duration
+        self.slot = slot
+    }
+}
+
+extension TestSection {
+    /// Decodes the test's `sections` field, which the API documents as an **object** of slot
+    /// data while some deployments (and this package's own older fixtures) return an array.
+    /// Both shapes are accepted — decoding only the array shape made a conforming response
+    /// throw, and the lenient page decoder then dropped the entire assessment row.
+    ///
+    /// Each decoded section carries the slot it came from (the object key, or the array index)
+    /// so ``TestSection/id`` stays unique across unnamed sections.
+    nonisolated static func decodeSlots(
+        from container: KeyedDecodingContainer<Test.CodingKeys>,
+        forKey key: Test.CodingKeys
+    ) -> [TestSection]? {
+        if let array = container.loggedDecodeIfPresent([LenientElement<TestSection>].self, forKey: key) {
+            return array.enumerated().compactMap { index, element in
+                element.value?.inSlot(String(index))
+            }
+        }
+        guard let object = container.loggedDecodeIfPresent([String: LenientElement<TestSection>].self, forKey: key)
+        else { return nil }
+
+        let sections = object.sorted { $0.key < $1.key }.compactMap { slot, element in
+            element.value?.inSlot(slot)
+        }
+        // An object whose values are not section records decodes to nothing; report that as
+        // "no sections modelled" rather than as an empty section list.
+        return sections.isEmpty && !object.isEmpty ? nil : sections
+    }
+
+    /// A copy stamped with the slot it occupies, unless the value already carried one.
+    private nonisolated func inSlot(_ slot: String) -> Self {
+        Self(uuid: uuid, name: name, questionCount: questionCount, duration: duration, slot: self.slot ?? slot)
     }
 }
 

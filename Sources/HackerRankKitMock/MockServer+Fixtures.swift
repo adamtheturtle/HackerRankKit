@@ -62,34 +62,44 @@ public nonisolated enum MockFixtures {
 
     // MARK: - Tests
 
+    /// Page one of the tests list. The timestamp keys are the API's own `starttime`/`endtime`
+    /// spellings and `sections` is the documented slot **object**, so the demo data exercises
+    /// the same shapes a live account returns.
     static let testsPage1 = #"""
     {"data":[
       {"id":"t1","unique_id":"backend-screen","name":"Backend Engineer Screen","state":"active",
-       "start_time":"2026-05-01T09:00:00Z","end_time":"2026-06-01T09:00:00Z","duration":90,
+       "starttime":"2026-05-01T09:00:00Z","endtime":"2026-06-01T09:00:00Z","duration":90,
        "languages":["python","go","java"],"cutoff_score":70,"tags":["backend","screening"],
-       "library":"HackerRank","role":"Backend Engineer","skills":["APIs","Data Structures"],"type":"Screen",
+       "library":"HackerRank","role_ids":["Backend Engineer"],"experience":["Senior"],
+       "skills":["APIs","Data Structures"],"type":"Screen",
+       "candidate_details":["full_name","university"],"custom_acknowledge_text":"I will not seek outside help.",
+       "hide_compile_test":false,"hide_template":false,"enable_acknowledgement":true,
+       "enable_advanced_proctoring":true,"enable_secure_assessment_mode":false,
+       "enable_ml_plagiarism_analysis":true,"enable_photo_identification":true,
+       "test_admins":["u1","u2"],"ide_config":"default",
        "enable_proctoring":true,"instructions":"Solve all questions within the time limit.","questions":["q1","q2"],
-       "sections":[{"uuid":"s1","name":"Coding","questions":2,"duration":60},
-                   {"uuid":"s2","name":"Multiple Choice","questions":5,"duration":30}]},
+       "sections":{"s1":{"uuid":"s1","name":"Coding","questions":2,"duration":60},
+                   "s2":{"uuid":"s2","name":"Multiple Choice","questions":5,"duration":30}}},
       {"id":"t2","unique_id":"frontend-takehome","name":"Frontend Take-Home","state":"active",
-       "start_time":"2026-05-10T09:00:00Z","duration":120,"languages":["javascript","typescript"],
-       "cutoff_score":65,"tags":["frontend"],"library":"HackerRank","role":"Frontend Engineer",
+       "starttime":"2026-05-10T09:00:00Z","duration":120,"languages":["javascript","typescript"],
+       "cutoff_score":65,"tags":["frontend"],"library":"HackerRank","role_ids":["Frontend Engineer"],
        "skills":["React","Accessibility"],"type":"Take Home"},
       {"id":"t3","unique_id":"ds-quiz","name":"Data Structures Quiz","state":"archived",
        "duration":45,"languages":["cpp"],"cutoff_score":80,"tags":["algorithms","mcq"],
-       "library":"HackerRank","role":"General Engineering","skills":["Algorithms"],"type":"Quiz"}
+       "library":"HackerRank","role_ids":["General Engineering"],"skills":["Algorithms"],"type":"Quiz"}
     ],"next":"https://www.hackerrank.com/x/api/v3/tests?limit=3&offset=3"}
     """#
 
     static let testsPage2 = #"""
     {"data":[
       {"id":"t4","unique_id":"sre-screen","name":"SRE On-Call Screen","state":"active",
-       "start_time":"2026-05-15T09:00:00Z","duration":75,"languages":["python","bash"],
-       "cutoff_score":72,"tags":["sre","backend"],"library":"HackerRank","role":"SRE",
+       "starttime":"2026-05-15T09:00:00Z","duration":75,"languages":["python","bash"],
+       "cutoff_score":72,"tags":["sre","backend"],"library":"HackerRank","role_ids":["SRE"],
        "skills":["Incident Response","Shell"],"type":"Screen","draft":true},
       {"id":"t5","unique_id":"ml-fundamentals","name":"ML Fundamentals","state":"active",
        "duration":60,"languages":["python"],"cutoff_score":68,"tags":["ml"],"library":"HackerRank",
-       "role":"Machine Learning Engineer","skills":["Machine Learning","Python"],"type":"Screen","locked":true}
+       "role_ids":["Machine Learning Engineer"],"skills":["Machine Learning","Python"],"type":"Screen",
+       "locked":true,"locked_by":"u1"}
     ],"next":null}
     """#
 
@@ -97,7 +107,8 @@ public nonisolated enum MockFixtures {
     /// password, and MCQ scoring over the list shape.
     static let testDetail = #"""
     {"id":"t1","unique_id":"backend-screen","name":"Backend Engineer Screen","state":"active",
-     "duration":90,"languages":["python","go","java"],"cutoff_score":70,
+     "starttime":"2026-05-01T09:00:00Z","endtime":"2026-06-01T09:00:00Z",
+     "duration":90,"languages":["python","go","java"],"cutoff_score":70,"ide_config":"default",
      "short_login_url":"https://hr.gs/backend-screen",
      "public_login_url":"https://www.hackerrank.com/tests/backend-screen/login",
      "master_password":"demo-master-pw","mcq_correct_score":4.0,"mcq_incorrect_score":-1.0}

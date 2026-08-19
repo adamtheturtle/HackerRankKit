@@ -32,6 +32,23 @@ struct MockServerTests {
     }
 
     @Test
+    func `seeded tests carry the documented configuration fields`() async throws {
+        let page = try await client.testsPage()
+        let test = try #require(page.items.first { $0.id == "t1" })
+        #expect(test.startTime == "2026-05-01T09:00:00Z")
+        #expect(test.endTime == "2026-06-01T09:00:00Z")
+        #expect(test.roleIDs == ["Backend Engineer"])
+        #expect(test.experience == ["Senior"])
+        #expect(test.candidateDetails == ["full_name", "university"])
+        #expect(test.testAdmins == ["u1", "u2"])
+        #expect(test.ideConfig == "default")
+        #expect(test.enableAdvancedProctoring == true)
+        #expect(test.enablePhotoIdentification == true)
+        // The fixture serves `sections` in the documented object shape.
+        #expect(test.sections?.map(\.displayName) == ["Coding", "Multiple Choice"])
+    }
+
+    @Test
     func `single test detail exposes the sensitive fields`() async throws {
         let detail = try await client.test(id: "t1")
         #expect(detail.accessPassword == "demo-master-pw")
