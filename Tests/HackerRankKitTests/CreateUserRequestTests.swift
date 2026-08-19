@@ -32,12 +32,36 @@ struct CreateUserRequestTests {
     }
 
     @Test
-    func `nil teams are omitted from the body`() throws {
-        let request = CreateUserRequest(
-            email: "new@example.com", firstName: nil, lastName: nil, role: nil, teams: nil
-        )
-        let json = try encodeToJSON(request)
-        #expect(json["teams"] == nil)
-        #expect(json["email"] as? String == "new@example.com")
+    func `a create without its required values fails before any request`() async throws {
+        // Defaulting these built a body the server rejects after a round trip, so the
+        // client refuses it locally instead.
+        let (client, recorder) = RecordedClient.make { _ in (200, Data("{}".utf8)) }
+        let invalid: [(String, () async throws -> Void)] = [
+            ("blank first name", {
+                _ = try await client.createUser(
+                    email: "new@example.com", firstName: " ", role: "recruiter", teamIDs: ["tm1"]
+                )
+            }),
+            ("blank role", {
+                _ = try await client.createUser(
+                    email: "new@example.com", firstName: "New", role: "", teamIDs: ["tm1"]
+                )
+            }),
+            ("no teams", {
+                _ = try await client.createUser(
+                    email: "new@example.com", firstName: "New", role: "recruiter", teamIDs: [" "]
+                )
+            })
+        ]
+
+        for (name, create) in invalid {
+            do {
+                try await create()
+                Issue.record("\(name) should be rejected")
+            } catch let HackerRankError.http(status, _) {
+                #expect(status == 0)
+            }
+        }
+        #expect(recorder.requests.isEmpty)
     }
 }

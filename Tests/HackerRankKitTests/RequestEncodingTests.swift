@@ -433,12 +433,13 @@ struct RequestEncodingTests {
     func `scim requests encode provisioning bodies`() throws {
         let user = try encodedObject(SCIMUserWriteRequest(
             userName: "rhea@example.com",
+            name: ["givenName": .string("Rhea")],
+            email: "rhea@example.com",
+            additionalEmails: ["rhea.recruiter@example.com", "  "],
             active: true,
             role: "recruiter",
             teamAdmin: true,
             companyAdmin: false,
-            name: ["givenName": .string("Rhea")],
-            emails: [.object(["value": .string("rhea@example.com")])],
             schemas: ["urn:ietf:params:scim:schemas:core:2.0:User", ""]
         ))
         #expect(user["userName"] as? String == "rhea@example.com")
@@ -447,13 +448,18 @@ struct RequestEncodingTests {
         #expect(user["team_admin"] as? Bool == true)
         #expect(user["company_admin"] as? Bool == false)
         #expect((user["name"] as? [String: Any])?["givenName"] as? String == "Rhea")
+        // The required email list always carries the primary address first.
+        #expect(user["emails"] as? [String] == ["rhea@example.com", "rhea.recruiter@example.com"])
         #expect(user["schemas"] as? [String] == ["urn:ietf:params:scim:schemas:core:2.0:User"])
 
         let group = try encodedObject(SCIMGroupWriteRequest(
             displayName: "Backend Hiring",
             members: [.object(["value": .string("scim-u1")])]
         ))
-        #expect(group["displayName"] as? String == "Backend Hiring")
+        // HackerRank's SCIM group schema spells the key `diplayName`; the correctly
+        // spelled one is not read, so a group would have been created unnamed.
+        #expect(group["diplayName"] as? String == "Backend Hiring")
+        #expect(group["displayName"] == nil)
         #expect((group["members"] as? [[String: Any]])?.first?["value"] as? String == "scim-u1")
 
         let patch = try encodedObject(SCIMPatchRequest(operations: [

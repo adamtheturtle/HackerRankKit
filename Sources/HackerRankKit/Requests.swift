@@ -338,15 +338,15 @@ public nonisolated struct CandidateReportPDF: Decodable, Sendable {
     }
 }
 
-/// The body sent when creating a user. Snake-case to match the API; blank optional
-/// fields are omitted. The server requires `teams` (an array of team-id objects) along
-/// with `email`, `firstname`, and `role`; it rejects a create without them.
+/// The body sent when creating a user. Snake-case to match the API; a blank last name is
+/// omitted. `email`, `firstname`, `role`, and `teams` (an array of team-id objects) are
+/// required by the API, so they are not optional here.
 nonisolated struct CreateUserRequest: Encodable {
     let email: String
-    let firstName: String?
+    let firstName: String
     let lastName: String?
-    let role: String?
-    let teams: [TeamRef]?
+    let role: String
+    let teams: [TeamRef]
 
     /// The API's team reference shape on a user create: an object holding the team's id.
     struct TeamRef: Encodable {
