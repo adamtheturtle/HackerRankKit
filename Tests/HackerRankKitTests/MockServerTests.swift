@@ -237,8 +237,13 @@ struct MockServerTests {
 
     @Test
     func `remaining documented gaps are routed by the mock server`() async throws {
+        // The organisation-wide search answers with people and their attempts, not with
+        // per-test candidate records; decoding it as the latter dropped every match.
         let globalCandidates = try await client.searchCandidates(query: "ada")
-        #expect(globalCandidates.items.map(\.id) == ["c1"])
+        #expect(globalCandidates.items.map(\.id) == ["cand-ada"])
+        #expect(globalCandidates.items.first?.name == "Ada Lovelace")
+        #expect(globalCandidates.items.first?.attempts.map(\.id) == ["c1"])
+        #expect(globalCandidates.items.first?.attempts.first?.testID == "t1")
 
         let updatedInterview = try await client.updateInterview(
             id: "i1", options: InterviewUpdateOptions(title: "Updated")

@@ -47,6 +47,17 @@ public nonisolated struct TestDetail: Decodable, Hashable, Sendable {
         shortLoginURL?.isEmpty == false || publicLoginURL?.isEmpty == false || accessPassword?.isEmpty == false
     }
 
+    /// The opt-in fields this model is made of, requested by
+    /// ``HackerRankClient/test(id:additionalFields:)`` so a detail read actually returns
+    /// what the type promises.
+    public static let detailAdditionalFields = [
+        "short_login_url",
+        "public_login_url",
+        "master_password",
+        "mcq_correct_score",
+        "mcq_incorrect_score"
+    ]
+
     /// Whether MCQ scoring was reported, so that section only shows when present.
     public var hasScoring: Bool {
         mcqCorrectScore != nil || mcqIncorrectScore != nil

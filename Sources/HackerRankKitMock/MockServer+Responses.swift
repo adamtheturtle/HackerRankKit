@@ -130,13 +130,22 @@ nonisolated enum MockResponses {
         return nil
     }
 
+    /// The candidate-search fixture for a path, or `nil` when the path is not a candidate
+    /// search. The organisation-wide route answers with a different resource — a person and
+    /// their attempts — from the per-test route's candidate records.
+    private static func candidateSearchBase(for url: URL) -> String? {
+        guard url.path.contains("/candidates") else { return nil }
+
+        return url.path.contains("/tests/") ? MockFixtures.candidateSearch : MockFixtures.organizationCandidateSearch
+    }
+
     /// Serves the server-side search endpoints (`/users/search`,
     /// `/tests/{id}/candidates/search`) so the demo actually narrows as you type. Filters
     /// the fixture's `data` rows to those with any string value containing the `search`
     /// term (case-insensitive) — a faithful stand-in for the server's own matching. An
     /// empty term returns the whole fixture.
     private static func searchBody(for url: URL, query: [String: String]) -> String {
-        let base = url.path.contains("/candidates") ? MockFixtures.candidateSearch : MockFixtures.userSearch
+        let base = candidateSearchBase(for: url) ?? MockFixtures.userSearch
         let needle = (query["search"] ?? query["query"] ?? "").lowercased()
         guard !needle.isEmpty,
               let data = base.data(using: .utf8),

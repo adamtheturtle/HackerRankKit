@@ -381,6 +381,13 @@ public nonisolated struct TestCandidate: Codable, Hashable, Identifiable, Sendab
 }
 
 extension TestCandidate {
+    /// The opt-in fields a candidate detail read asks for by default. The API omits each
+    /// of these unless it is named in `additional_fields`, so a detail read without them
+    /// returns little more than the list row.
+    public static let detailAdditionalFields = ["questions", "attempt_events", "comments", "ip_address"]
+}
+
+extension TestCandidate {
     /// Decodes resiliently. `email` is required in the schema but can be absent or null on live
     /// records (e.g. an invited candidate who hasn't registered); the page decoder drops any
     /// element that throws, so without this those candidates silently vanish from the list.
