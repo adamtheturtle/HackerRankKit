@@ -29,6 +29,75 @@ struct ModelDecodingTests {
     }
 
     @Test
+    func `test decodes the API's unhyphenated window keys`() throws {
+        let json = #"""
+        {"id":"t1","name":"Screen","starttime":"2026-08-20T09:00:00+0000",
+         "endtime":"2026-08-27T09:00:00+0000"}
+        """#
+        let test = try decode(HackerRankKit.Test.self, json)
+        #expect(test.startTime == "2026-08-20T09:00:00+0000")
+        #expect(test.endTime == "2026-08-27T09:00:00+0000")
+    }
+
+    @Test
+    func `test decodes every documented configuration field`() throws {
+        let json = #"""
+        {"id":"t1","name":"Screen","locked":true,"locked_by":"u9",
+         "candidate_details":["full_name","university"],
+         "custom_acknowledge_text":"I agree.","hide_compile_test":true,
+         "role_ids":["r1","r2"],"experience":["Senior"],"test_admins":["u1"],
+         "hide_template":true,"enable_acknowledgement":true,
+         "enable_advanced_proctoring":true,"enable_secure_assessment_mode":true,
+         "enable_ml_plagiarism_analysis":true,"enable_photo_identification":true,
+         "ide_config":"vscode"}
+        """#
+        let test = try decode(HackerRankKit.Test.self, json)
+        #expect(test.lockedBy == "u9")
+        #expect(test.candidateDetails == ["full_name", "university"])
+        #expect(test.customAcknowledgeText == "I agree.")
+        #expect(test.hideCompileTest == true)
+        #expect(test.roleIDs == ["r1", "r2"])
+        #expect(test.experience == ["Senior"])
+        #expect(test.testAdmins == ["u1"])
+        #expect(test.hideTemplate == true)
+        #expect(test.enableAcknowledgement == true)
+        #expect(test.enableAdvancedProctoring == true)
+        #expect(test.enableSecureAssessmentMode == true)
+        #expect(test.enableMLPlagiarismAnalysis == true)
+        #expect(test.enablePhotoIdentification == true)
+        #expect(test.ideConfig == "vscode")
+        #expect(test.roleFilterValues == ["R1", "R2"])
+    }
+
+    @Test
+    func `a test whose sections are the documented object survives the page`() throws {
+        // The schema documents `sections` as an object. Decoding only the array shape made a
+        // conforming row throw, and the lenient page decoder then dropped the whole test.
+        let json = #"""
+        {"data":[{"id":"t1","name":"Screen",
+          "sections":{"b":{"uuid":"s2","name":"MCQ","questions":5},
+                      "a":{"name":"Coding","questions":2,"duration":60}}}],"next":null}
+        """#
+        let page = try decode(HackerRankPage<HackerRankKit.Test>.self, json)
+        let sections = try #require(page.data.first?.sections)
+        #expect(sections.map(\.slot) == ["a", "b"])
+        #expect(sections.map(\.displayName) == ["Coding", "MCQ"])
+        #expect(sections.map(\.id) == ["a-Coding", "s2"])
+    }
+
+    @Test
+    func `array-shaped sections still decode and stay distinct`() throws {
+        let json = #"""
+        {"id":"t1","name":"Screen","sections":[{"questions":2},{"questions":3}]}
+        """#
+        let test = try decode(HackerRankKit.Test.self, json)
+        let sections = try #require(test.sections)
+        #expect(sections.map(\.questionCount) == [2, 3])
+        // Unnamed sections used to share the constant id "section" and collide.
+        #expect(sections.map(\.id) == ["0", "1"])
+    }
+
+    @Test
     func `page drops invalid elements but keeps valid ones`() throws {
         // The middle element is missing the required `id`, so the lenient page decoder
         // drops it while keeping the two valid tests and the `next` cursor.
