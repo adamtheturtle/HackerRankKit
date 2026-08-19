@@ -622,13 +622,6 @@ public nonisolated struct UserUpdateOptions: Sendable, Equatable {
     }
 }
 
-/// A user write acknowledgement for endpoints that do not return a full user.
-public nonisolated struct UserWriteResult: Decodable, Sendable {
-    public let id: String?
-    public let email: String?
-    public let status: String?
-}
-
 /// The body sent when creating a question. The stable metadata fields are modelled here;
 /// type-specific authoring payloads can layer on later without changing this first slice.
 nonisolated struct CreateQuestionRequest: Encodable {

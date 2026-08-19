@@ -166,8 +166,12 @@ struct MockServerTests {
 
     @Test
     func `core management gaps are routed by the mock server`() async throws {
-        let archived = try await client.archiveTest(testID: "t1")
-        #expect(archived.id == "t-created")
+        // The documented 204 endpoints answer with an empty body: returning normally is
+        // the whole result, and used to be reported as a decode failure instead.
+        try await client.archiveTest(testID: "t1")
+        try await client.deleteTest(testID: "t5")
+        try await client.lockUser(id: "u1")
+        try await client.removeTeamMember(teamID: "tm1", userID: "u2")
 
         let updatedCandidate = try await client.updateCandidate(
             testID: "t1",
