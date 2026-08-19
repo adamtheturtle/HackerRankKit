@@ -126,12 +126,28 @@ struct MockServerTests {
 
     @Test
     func `question write flows return their echoed record`() async throws {
-        let created = try await client.createQuestion(name: "New Question", type: "code")
+        let created = try await client.createQuestion(
+            name: "New Question", type: "code", problemStatement: "Return two indices.", recommendedDuration: 20
+        )
         #expect(created.id == "q-written")
         let updated = try await client.updateQuestion(questionID: "q1", name: "Renamed Question")
         #expect(updated.name == "New Question")
-        let deleted = try await client.deleteQuestion(questionID: "q1")
-        #expect(deleted.type == "code")
+    }
+
+    @Test
+    func `the single-question read carries the whole resource`() async throws {
+        let detail = try await client.question(id: "q3")
+        // The base resource comes back from the same response, so a detail refresh can
+        // replace a stale list row instead of only annotating one.
+        #expect(detail.question.id == "q3")
+        #expect(detail.question.name == "SQL Joins")
+        #expect(detail.question.type == "mcq")
+        #expect(detail.question.owner == "u1")
+        #expect(detail.options.count == 4)
+        // The answer is a one-based option index, not the option's text.
+        #expect(detail.answer == .option(2))
+        #expect(detail.answer?.indices == [2])
+        #expect(detail.hasContent)
     }
 
     @Test

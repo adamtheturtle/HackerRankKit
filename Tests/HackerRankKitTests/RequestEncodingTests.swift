@@ -219,31 +219,66 @@ struct RequestEncodingTests {
     }
 
     @Test
-    func `question create encodes stable metadata fields`() throws {
+    func `question create encodes the schema's required and optional fields`() throws {
         let request = CreateQuestionRequest(
             name: "Two Sum",
             type: "code",
+            problemStatement: "Return two indices.",
+            recommendedDuration: 20,
             options: QuestionWriteOptions(
-                status: "published",
                 languages: ["python", "go"],
-                problemStatement: "Return two indices.",
-                recommendedDuration: 20,
-                tags: ["arrays", "hashing"],
-                maxScore: 100.0,
-                skills: ["Problem Solving"]
+                internalNotes: "Swap the distractor next revision.",
+                tags: ["arrays", "hashing"]
             )
         )
 
         let object = try encodedObject(request)
         #expect(object["name"] as? String == "Two Sum")
         #expect(object["type"] as? String == "code")
-        #expect(object["status"] as? String == "published")
-        #expect(object["languages"] as? [String] == ["python", "go"])
         #expect(object["problem_statement"] as? String == "Return two indices.")
         #expect(object["recommended_duration"] as? Int == 20)
+        #expect(object["languages"] as? [String] == ["python", "go"])
+        #expect(object["internal_notes"] as? String == "Swap the distractor next revision.")
         #expect(object["tags"] as? [String] == ["arrays", "hashing"])
-        #expect(object["max_score"] as? Double == 100.0)
-        #expect(object["skills"] as? [String] == ["Problem Solving"])
+        // None of these are defined by the question write schemas.
+        #expect(object["status"] == nil)
+        #expect(object["max_score"] == nil)
+        #expect(object["skills"] == nil)
+    }
+
+    @Test
+    func `an mcq question is created with its options and answer`() throws {
+        let single = try encodedObject(CreateQuestionRequest(
+            name: "SQL Joins",
+            type: "mcq",
+            problemStatement: "Which join keeps unmatched left rows?",
+            recommendedDuration: 5,
+            options: QuestionWriteOptions(mcqOptions: ["INNER", "LEFT"], answer: .option(2))
+        ))
+        #expect(single["options"] as? [String] == ["INNER", "LEFT"])
+        #expect(single["answer"] as? Int == 2)
+
+        let multiple = try encodedObject(UpdateQuestionRequest(
+            name: nil,
+            type: nil,
+            options: QuestionWriteOptions(answer: .options([1, 3]))
+        ))
+        #expect(multiple["answer"] as? [Int] == [1, 3])
+    }
+
+    @Test
+    func `a question create ignores the option copies of its required fields`() throws {
+        let request = CreateQuestionRequest(
+            name: "Two Sum",
+            type: "code",
+            problemStatement: "Return two indices.",
+            recommendedDuration: 20,
+            options: QuestionWriteOptions(problemStatement: "Something else", recommendedDuration: 999)
+        )
+
+        let object = try encodedObject(request)
+        #expect(object["problem_statement"] as? String == "Return two indices.")
+        #expect(object["recommended_duration"] as? Int == 20)
     }
 
     @Test
@@ -252,35 +287,33 @@ struct RequestEncodingTests {
             name: nil,
             type: " ",
             options: QuestionWriteOptions(
-                status: "",
                 languages: ["python", ""],
                 problemStatement: "\n",
-                tags: [],
-                skills: ["Algorithms", " "]
+                internalNotes: "  ",
+                tags: []
             )
         )
 
         let object = try encodedObject(request)
         #expect(object["name"] == nil)
         #expect(object["type"] == nil)
-        #expect(object["status"] == nil)
         #expect(object["problem_statement"] == nil)
         #expect(object["tags"] as? [String] == [])
         #expect(object["languages"] as? [String] == ["python"])
-        #expect(object["skills"] as? [String] == ["Algorithms"])
+        // An explicit empty note is a clear, so it survives onto the wire.
+        #expect(object["internal_notes"] as? String == "")
     }
 
     @Test
-    func `question update encodes explicit scalar clears as null`() throws {
+    func `question update encodes an explicit duration clear as null`() throws {
         let request = UpdateQuestionRequest(
             name: nil,
             type: nil,
-            options: QuestionWriteOptions(clearsRecommendedDuration: true, clearsMaxScore: true)
+            options: QuestionWriteOptions(clearsRecommendedDuration: true)
         )
 
         let object = try encodedObject(request)
         #expect(object["recommended_duration"] is NSNull)
-        #expect(object["max_score"] is NSNull)
     }
 
     @Test
