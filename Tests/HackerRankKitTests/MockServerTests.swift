@@ -271,7 +271,11 @@ struct MockServerTests {
         #expect(users.resources.first?.userName == "rhea@example.com")
         let user = try await client.scimUser(id: "scim-u1")
         #expect(user.id == "scim-u1")
-        let createdUser = try await client.createSCIMUser(body: SCIMUserWriteRequest(userName: "rhea@example.com"))
+        let createdUser = try await client.createSCIMUser(body: SCIMUserWriteRequest(
+            userName: "rhea@example.com",
+            name: ["givenName": .string("Rhea"), "familyName": .string("Recruiter")],
+            email: "rhea@example.com"
+        ))
         #expect(createdUser.userName == "rhea@example.com")
         try await client.lockSCIMUser(id: "scim-u1")
 

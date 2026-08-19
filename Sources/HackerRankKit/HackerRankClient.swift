@@ -807,24 +807,35 @@ public struct HackerRankClient {
 
     /// Creates an organisation user (`POST /users`).
     ///
-    /// The server requires `email`, `firstName`, `role`, and at least one team id — it
-    /// rejects the request with HTTP 400 ("Parameter teams is required") otherwise. The
-    /// parameters stay optional here so the server remains the source of truth for
-    /// validation; an empty `teamIDs` is omitted from the body.
+    /// `UserCreate` requires `email`, `firstname`, `role`, and at least one team, so all
+    /// four are parameters: defaulting them built a body the server rejects with HTTP 400
+    /// ("Parameter teams is required") after a round trip. Blank values and an empty team
+    /// list are rejected locally for the same reason.
+    ///
+    /// - Throws: ``HackerRankError/http(_:_:)`` with status 0 when a required value is
+    ///   blank or no team is given, before any request is made.
     @discardableResult
     public func createUser(
         email: String,
-        firstName: String? = nil,
-        lastName: String? = nil,
-        role: String? = nil,
-        teamIDs: [String] = []
+        firstName: String,
+        role: String,
+        teamIDs: [String],
+        lastName: String? = nil
     ) async throws -> CreatedUser {
+        let teams = teamIDs.compactMap(Self.nonBlank)
+        guard let email = Self.nonBlank(email),
+              let firstName = Self.nonBlank(firstName),
+              let role = Self.nonBlank(role),
+              !teams.isEmpty else {
+            throw HackerRankError.http(0, "Creating a user needs an email, a first name, a role, and a team.")
+        }
+
         let body = CreateUserRequest(
-            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
-            firstName: Self.nonBlank(firstName),
+            email: email,
+            firstName: firstName,
             lastName: Self.nonBlank(lastName),
-            role: Self.nonBlank(role),
-            teams: teamIDs.isEmpty ? nil : teamIDs.map(CreateUserRequest.TeamRef.init)
+            role: role,
+            teams: teams.map(CreateUserRequest.TeamRef.init)
         )
         return try await send(CreatedUser.self, method: "POST", path: "\(Self.apiV3)/users", body: body)
     }

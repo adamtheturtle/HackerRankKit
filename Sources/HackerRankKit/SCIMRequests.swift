@@ -90,44 +90,55 @@ public nonisolated struct SCIMGroup: Decodable, Identifiable, Sendable {
 }
 
 /// The body sent when creating or replacing a legacy SCIM user.
+///
+/// `name`, `userName`, and `emails` are required by the create schema, so they are
+/// parameters of the initializer rather than optionals: a body missing any of them is
+/// rejected, and there is no reason to let one be built.
 public nonisolated struct SCIMUserWriteRequest: Encodable, Sendable, Equatable {
-    public let userName: String?
+    public let userName: String
+    public let name: [String: HackerRankJSONValue]
+    public let emails: [String]
     public let active: Bool?
     public let role: String?
     public let teamAdmin: Bool?
     public let companyAdmin: Bool?
-    public let name: [String: HackerRankJSONValue]?
-    public let emails: [HackerRankJSONValue]?
     public let schemas: [String]?
 
     enum CodingKeys: String, CodingKey {
         case userName
+        case name
+        case emails
         case active
         case role
         case teamAdmin = "team_admin"
         case companyAdmin = "company_admin"
-        case name
-        case emails
         case schemas
     }
 
+    /// - Parameters:
+    ///   - userName: the SCIM user name, usually the primary email address.
+    ///   - name: the name object, e.g. `["givenName": .string("Ada")]`.
+    ///   - email: the user's primary email. Taking it separately from `additionalEmails`
+    ///     is what guarantees the required list is never empty.
+    ///   - additionalEmails: any further addresses, in order after the primary.
     public init(
-        userName: String? = nil,
+        userName: String,
+        name: [String: HackerRankJSONValue],
+        email: String,
+        additionalEmails: [String] = [],
         active: Bool? = nil,
         role: String? = nil,
         teamAdmin: Bool? = nil,
         companyAdmin: Bool? = nil,
-        name: [String: HackerRankJSONValue]? = nil,
-        emails: [HackerRankJSONValue]? = nil,
         schemas: [String]? = nil
     ) {
-        self.userName = Self.nonBlank(userName)
+        self.userName = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.name = name
+        emails = [email.trimmingCharacters(in: .whitespacesAndNewlines)] + additionalEmails.compactMap(Self.nonBlank)
         self.active = active
         self.role = Self.nonBlank(role)
         self.teamAdmin = teamAdmin
         self.companyAdmin = companyAdmin
-        self.name = name?.isEmpty == false ? name : nil
-        self.emails = emails?.isEmpty == false ? emails : nil
         self.schemas = Self.cleanList(schemas)
     }
 
@@ -147,6 +158,15 @@ public nonisolated struct SCIMGroupWriteRequest: Encodable, Sendable, Equatable 
     public let displayName: String?
     public let members: [HackerRankJSONValue]?
     public let schemas: [String]?
+
+    /// HackerRank's SCIM group schema spells the name key `diplayName`. Encoding the
+    /// correctly spelled one meant the only name field the server reads was never sent.
+    /// The response decoder already accepts both spellings.
+    enum CodingKeys: String, CodingKey {
+        case displayName = "diplayName"
+        case members
+        case schemas
+    }
 
     public init(
         displayName: String? = nil,
