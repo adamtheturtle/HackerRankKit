@@ -613,10 +613,17 @@ public struct HackerRankClient {
 
     // MARK: Interview templates
 
-    /// One page of interview templates (`GET /interview_templates`).
-    public func interviewTemplatesPage(after cursor: String? = nil) async throws -> Page<InterviewTemplate> {
+    /// One page of interview templates (`GET /interview_templates`), optionally narrowed to
+    /// the templates the current user owns or the ones shared with them.
+    public func interviewTemplatesPage(
+        after cursor: String? = nil,
+        filter: InterviewTemplateFilter? = nil
+    ) async throws -> Page<InterviewTemplate> {
         try await page(
-            HackerRankPage<InterviewTemplate>.self, path: "\(Self.apiV3)/interview_templates", cursor: cursor
+            HackerRankPage<InterviewTemplate>.self,
+            path: "\(Self.apiV3)/interview_templates",
+            cursor: cursor,
+            query: filter.map { [URLQueryItem(name: "filter", value: $0.rawValue)] } ?? []
         )
     }
 
@@ -625,30 +632,35 @@ public struct HackerRankClient {
         try await fetch(InterviewTemplate.self, path: "\(Self.apiV3)/interview_templates/\(id)")
     }
 
-    /// Creates an interview template (`POST /interview_templates`).
+    /// Creates an interview template (`POST /interview_templates`). The name is the only
+    /// field the endpoint requires.
     @discardableResult
     public func createInterviewTemplate(
-        options: InterviewTemplateWriteOptions
+        name: String,
+        options: InterviewTemplateCreateOptions = InterviewTemplateCreateOptions()
     ) async throws -> InterviewTemplate {
         try await send(
             InterviewTemplate.self,
             method: "POST",
             path: "\(Self.apiV3)/interview_templates",
-            body: InterviewTemplateWriteRequest(options: options)
+            body: CreateInterviewTemplateRequest(
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines), options: options
+            )
         )
     }
 
-    /// Updates an interview template (`PUT /interview_templates/{template_id}`).
+    /// Updates an interview template (`PUT /interview_templates/{template_id}`). Only the
+    /// fields supplied are sent; the server leaves everything else unchanged.
     @discardableResult
     public func updateInterviewTemplate(
         id: Int,
-        options: InterviewTemplateWriteOptions = InterviewTemplateWriteOptions()
+        options: InterviewTemplateUpdateOptions = InterviewTemplateUpdateOptions()
     ) async throws -> InterviewTemplate {
         try await send(
             InterviewTemplate.self,
             method: "PUT",
             path: "\(Self.apiV3)/interview_templates/\(id)",
-            body: InterviewTemplateWriteRequest(options: options)
+            body: UpdateInterviewTemplateRequest(options: options)
         )
     }
 
