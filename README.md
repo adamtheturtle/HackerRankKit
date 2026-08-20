@@ -9,8 +9,12 @@ no-network mock backend.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/adamtheturtle/HackerRankKit.git", from: "0.1.0")
+.package(url: "https://github.com/adamtheturtle/HackerRankKit.git", from: "0.8.0")
 ```
+
+Releases before 0.8.0 modelled a wire contract that did not match the API, so 0.8.0 is
+the earliest version worth starting from. Upgrading from an earlier one? See
+[UPGRADING.md](UPGRADING.md).
 
 Add `HackerRankKit` to your app target and `HackerRankKitMock` to tests or demos that
 should run without the network.
