@@ -74,8 +74,9 @@ struct MockServerTests {
         #expect(test.ideConfig == "default")
         #expect(test.enableAdvancedProctoring == true)
         #expect(test.enablePhotoIdentification == true)
-        // The fixture serves `sections` in the documented object shape.
+        // The fixture serves `sections` in the live array shape.
         #expect(test.sections?.map(\.displayName) == ["Coding", "Multiple Choice"])
+        #expect(test.sections?.map(\.slot) == ["0", "1"])
     }
 
     @Test

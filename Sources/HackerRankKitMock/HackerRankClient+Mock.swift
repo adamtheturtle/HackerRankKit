@@ -17,6 +17,13 @@ extension HackerRankClient {
     /// defaults to "demo", and tests can pass a unique key each so a suite can run in
     /// parallel without sharing session state.
     public static func mock(unauthorized: Bool = false, key: String = "demo") -> Self {
-        Self(token: key, session: MockServer.session(unauthorized: unauthorized))
+        // The mock only intercepts `www.hackerrank.com`, including the SCIM `/Users` and
+        // `/Groups` routes, so both bases point there rather than at the live SCIM host.
+        Self(
+            token: key,
+            baseURL: defaultBaseURL,
+            scimBaseURL: defaultBaseURL,
+            session: MockServer.session(unauthorized: unauthorized)
+        )
     }
 }

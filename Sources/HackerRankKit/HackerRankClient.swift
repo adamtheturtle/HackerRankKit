@@ -77,6 +77,12 @@ public struct HackerRankClient {
     // default MainActor isolation.
     public nonisolated let token: String
     public nonisolated let baseURL: URL
+    /// Base URL for the SCIM provisioning surface (`/Users`, `/Groups`).
+    ///
+    /// Live SCIM lives at ``defaultSCIMBaseURL``, not under `/x/api/v3`. The mock server
+    /// serves the same routes on ``defaultBaseURL``, so ``mock(unauthorized:key:)`` points
+    /// both bases there.
+    public nonisolated let scimBaseURL: URL
     public nonisolated let session: URLSession
 
     /// The generic transport that does the request building, retries, pagination, and
@@ -95,15 +101,23 @@ public struct HackerRankClient {
     /// (e.g. a regional deployment).
     public static let defaultBaseURL = URL(string: "https://www.hackerrank.com") ?? URL(fileURLWithPath: "/")
 
+    /// The hosted SCIM provisioning host. Personal-access-token SCIM calls against
+    /// `www.hackerrank.com/Users` are not the JSON API (they return the web app).
+    public static let defaultSCIMBaseURL =
+        URL(string: "https://services.hackerrank.com/scim/v2") ?? URL(fileURLWithPath: "/")
+
     /// - Parameters:
     ///   - token: the HackerRank personal access token, sent as the Bearer credential.
     ///   - baseURL: the account's base URL; defaults to ``defaultBaseURL``.
+    ///   - scimBaseURL: the SCIM base URL; defaults to ``defaultSCIMBaseURL``.
     ///   - session: the URL session backing the transport; defaults to ``liveSession``.
     public init(token: String,
                 baseURL: URL = Self.defaultBaseURL,
+                scimBaseURL: URL = Self.defaultSCIMBaseURL,
                 session: URLSession = Self.liveSession) {
         self.token = token
         self.baseURL = baseURL
+        self.scimBaseURL = scimBaseURL
         self.session = session
         rest = PaginatedRESTClient(
             apiKey: token,
@@ -130,8 +144,12 @@ public struct HackerRankClient {
     }
 
     /// A live client against the hosted (or a custom) HackerRank endpoint.
-    public static func live(token: String, baseURL: URL = Self.defaultBaseURL) -> Self {
-        Self(token: token, baseURL: baseURL, session: liveSession)
+    public static func live(
+        token: String,
+        baseURL: URL = Self.defaultBaseURL,
+        scimBaseURL: URL = Self.defaultSCIMBaseURL
+    ) -> Self {
+        Self(token: token, baseURL: baseURL, scimBaseURL: scimBaseURL, session: liveSession)
     }
 
     /// Builds a configured decoder. A factory rather than a shared instance because
@@ -736,66 +754,72 @@ public struct HackerRankClient {
 
     // MARK: SCIM provisioning
 
-    /// Lists users from the legacy SCIM provisioning endpoint (`GET /Users`).
+    /// Lists users from the SCIM provisioning endpoint (`GET /Users`).
     public func scimUsers(limit: Int = 100, offset: Int = 0) async throws -> SCIMListResponse<SCIMUser> {
-        let url = try offsetURL(path: "/Users", limit: limit, offset: offset)
+        let url = try offsetURL(path: "/Users", limit: limit, offset: offset, base: scimBaseURL)
         return try await rest.performWithRetry(SCIMListResponse<SCIMUser>.self, request: try authorizedGET(url))
     }
 
-    /// Retrieves a user from the legacy SCIM provisioning endpoint (`GET /Users/{id}`).
+    /// Retrieves a user from the SCIM provisioning endpoint (`GET /Users/{id}`).
     public func scimUser(id: String) async throws -> SCIMUser {
-        try await fetch(SCIMUser.self, path: "/Users/\(Self.pathSegment(id))")
+        try await fetch(SCIMUser.self, path: "/Users/\(Self.pathSegment(id))", base: scimBaseURL)
     }
 
-    /// Creates a user through the legacy SCIM provisioning endpoint (`POST /Users`).
+    /// Creates a user through the SCIM provisioning endpoint (`POST /Users`).
     @discardableResult
     public func createSCIMUser(body: SCIMUserWriteRequest) async throws -> SCIMUser {
-        try await send(SCIMUser.self, method: "POST", path: "/Users", body: body)
+        try await send(SCIMUser.self, method: "POST", path: "/Users", body: body, base: scimBaseURL)
     }
 
-    /// Replaces a user through the legacy SCIM provisioning endpoint (`PUT /Users/{id}`).
+    /// Replaces a user through the SCIM provisioning endpoint (`PUT /Users/{id}`).
     @discardableResult
     public func updateSCIMUser(id: String, body: SCIMUserWriteRequest) async throws -> SCIMUser {
-        try await send(SCIMUser.self, method: "PUT", path: "/Users/\(Self.pathSegment(id))", body: body)
+        try await send(
+            SCIMUser.self, method: "PUT", path: "/Users/\(Self.pathSegment(id))", body: body, base: scimBaseURL
+        )
     }
 
-    /// Patches a user through the legacy SCIM provisioning endpoint (`PATCH /Users/{id}`).
+    /// Patches a user through the SCIM provisioning endpoint (`PATCH /Users/{id}`).
     @discardableResult
     public func patchSCIMUser(id: String, body: SCIMPatchRequest) async throws -> SCIMUser {
-        try await send(SCIMUser.self, method: "PATCH", path: "/Users/\(Self.pathSegment(id))", body: body)
+        try await send(
+            SCIMUser.self, method: "PATCH", path: "/Users/\(Self.pathSegment(id))", body: body, base: scimBaseURL
+        )
     }
 
-    /// Locks a user through the legacy SCIM provisioning endpoint (`DELETE /Users/{id}`).
+    /// Locks a user through the SCIM provisioning endpoint (`DELETE /Users/{id}`).
     public func lockSCIMUser(id: String) async throws {
-        try await sendNoContent(method: "DELETE", path: "/Users/\(Self.pathSegment(id))")
+        try await sendNoContent(method: "DELETE", path: "/Users/\(Self.pathSegment(id))", base: scimBaseURL)
     }
 
-    /// Lists groups from the legacy SCIM provisioning endpoint (`GET /Groups`).
+    /// Lists groups from the SCIM provisioning endpoint (`GET /Groups`).
     public func scimGroups(limit: Int = 100, offset: Int = 0) async throws -> SCIMListResponse<SCIMGroup> {
-        let url = try offsetURL(path: "/Groups", limit: limit, offset: offset)
+        let url = try offsetURL(path: "/Groups", limit: limit, offset: offset, base: scimBaseURL)
         return try await rest.performWithRetry(SCIMListResponse<SCIMGroup>.self, request: try authorizedGET(url))
     }
 
-    /// Retrieves a group from the legacy SCIM provisioning endpoint (`GET /Groups/{id}`).
+    /// Retrieves a group from the SCIM provisioning endpoint (`GET /Groups/{id}`).
     public func scimGroup(id: String) async throws -> SCIMGroup {
-        try await fetch(SCIMGroup.self, path: "/Groups/\(Self.pathSegment(id))")
+        try await fetch(SCIMGroup.self, path: "/Groups/\(Self.pathSegment(id))", base: scimBaseURL)
     }
 
-    /// Creates a group through the legacy SCIM provisioning endpoint (`POST /Groups`).
+    /// Creates a group through the SCIM provisioning endpoint (`POST /Groups`).
     @discardableResult
     public func createSCIMGroup(body: SCIMGroupWriteRequest) async throws -> SCIMGroup {
-        try await send(SCIMGroup.self, method: "POST", path: "/Groups", body: body)
+        try await send(SCIMGroup.self, method: "POST", path: "/Groups", body: body, base: scimBaseURL)
     }
 
-    /// Patches a group through the legacy SCIM provisioning endpoint (`PATCH /Groups/{id}`).
+    /// Patches a group through the SCIM provisioning endpoint (`PATCH /Groups/{id}`).
     @discardableResult
     public func patchSCIMGroup(id: String, body: SCIMPatchRequest) async throws -> SCIMGroup {
-        try await send(SCIMGroup.self, method: "PATCH", path: "/Groups/\(Self.pathSegment(id))", body: body)
+        try await send(
+            SCIMGroup.self, method: "PATCH", path: "/Groups/\(Self.pathSegment(id))", body: body, base: scimBaseURL
+        )
     }
 
-    /// Deprovisions a group through the legacy SCIM provisioning endpoint (`DELETE /Groups/{id}`).
+    /// Deprovisions a group through the SCIM provisioning endpoint (`DELETE /Groups/{id}`).
     public func deprovisionSCIMGroup(id: String) async throws {
-        try await sendNoContent(method: "DELETE", path: "/Groups/\(Self.pathSegment(id))")
+        try await sendNoContent(method: "DELETE", path: "/Groups/\(Self.pathSegment(id))", base: scimBaseURL)
     }
 
     // MARK: Users
@@ -982,8 +1006,8 @@ public struct HackerRankClient {
     ///
     /// The query is encoded by ``queryComponent(_:)`` rather than by `URLComponents`, which
     /// leaves `+` untouched (see that method).
-    nonisolated func url(path: String, query: [URLQueryItem] = []) throws -> URL {
-        var text = baseURL.absoluteString
+    nonisolated func url(path: String, query: [URLQueryItem] = [], base: URL? = nil) throws -> URL {
+        var text = (base ?? baseURL).absoluteString
         while text.hasSuffix("/") {
             text.removeLast()
         }
@@ -1022,9 +1046,10 @@ public struct HackerRankClient {
     private func fetch<T: Decodable & Sendable>(
         _ type: T.Type,
         path: String,
-        query: [URLQueryItem] = []
+        query: [URLQueryItem] = [],
+        base: URL? = nil
     ) async throws -> T {
-        try await rest.performWithRetry(type, request: try authorizedGET(try url(path: path, query: query)))
+        try await rest.performWithRetry(type, request: try authorizedGET(try url(path: path, query: query, base: base)))
     }
 
     /// Sends a request with a JSON body to `path` (already percent-encoded), as ``rest``'s own
@@ -1035,12 +1060,13 @@ public struct HackerRankClient {
         method: String,
         path: String,
         query: [URLQueryItem] = [],
-        body: some Encodable
+        body: some Encodable,
+        base: URL? = nil
     ) async throws -> T {
         guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
 
         let request = RESTRequest(
-            url: try url(path: path, query: query),
+            url: try url(path: path, query: query, base: base),
             method: method,
             headers: [
                 "Authorization": "Bearer \(token)",
@@ -1068,10 +1094,10 @@ public struct HackerRankClient {
     }
 
     /// Sends a request whose successful response may be empty (for example SCIM 204 deletes).
-    private func sendNoContent(method: String, path: String) async throws {
+    private func sendNoContent(method: String, path: String, base: URL? = nil) async throws {
         guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
 
-        var request = URLRequest(url: try url(path: path))
+        var request = URLRequest(url: try url(path: path, base: base))
         request.httpMethod = method
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -1092,11 +1118,11 @@ public struct HackerRankClient {
     }
 
     /// Builds an offset-paginated URL for legacy endpoints that do not return a `next` cursor.
-    nonisolated func offsetURL(path: String, limit: Int, offset: Int) throws -> URL {
+    nonisolated func offsetURL(path: String, limit: Int, offset: Int, base: URL? = nil) throws -> URL {
         try url(path: path, query: [
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "offset", value: String(offset))
-        ])
+        ], base: base)
     }
 
     /// The absolute `cursor` URL when continuing, or the first-page URL (base + path +

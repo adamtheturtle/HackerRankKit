@@ -29,7 +29,18 @@ struct ModelDecodingTests {
     }
 
     @Test
-    func `test decodes the API's unhyphenated window keys`() throws {
+    func `test decodes the live underscored window keys`() throws {
+        let json = #"""
+        {"id":"t1","name":"Screen","start_time":"2026-08-20T09:00:00+0000",
+         "end_time":"2026-08-27T09:00:00+0000"}
+        """#
+        let test = try decode(HackerRankKit.Test.self, json)
+        #expect(test.startTime == "2026-08-20T09:00:00+0000")
+        #expect(test.endTime == "2026-08-27T09:00:00+0000")
+    }
+
+    @Test
+    func `test still decodes the schema's unhyphenated window keys`() throws {
         let json = #"""
         {"id":"t1","name":"Screen","starttime":"2026-08-20T09:00:00+0000",
          "endtime":"2026-08-27T09:00:00+0000"}

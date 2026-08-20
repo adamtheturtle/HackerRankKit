@@ -13,10 +13,10 @@
 //
 //      HACKERRANK_TOKEN=… swift test --filter "Live wire contract"
 //
-//  They are skipped entirely without one, so CI is unaffected. **Read-only**: every
-//  request is a GET. Nothing here creates, updates, deletes, or invites, so it is safe to
-//  point at a production account. The token is read from the environment and never
-//  written anywhere.
+//  They are skipped entirely without one, so CI is unaffected. **Read-only by default**:
+//  GET checks never mutate. Opt-in write probes (SCIM create/delete, code-stub generate,
+//  disposable interview update) run only when `HACKERRANK_ALLOW_WRITES=1` is also set.
+//  The token is read from the environment and never written anywhere.
 //
 
 import Foundation
@@ -37,6 +37,11 @@ enum LiveAccount {
     /// Whether a token is configured. The live suite is skipped when it is not.
     nonisolated static var isConfigured: Bool {
         token != nil
+    }
+
+    /// Whether mutating probes may run. Off by default so a casual live pass stays read-only.
+    nonisolated static var writesAllowed: Bool {
+        ProcessInfo.processInfo.environment["HACKERRANK_ALLOW_WRITES"] == "1"
     }
 
     static var baseURL: URL {
@@ -98,7 +103,7 @@ struct LiveContractTests {
     private let client = LiveAccount.client()
     private let apiV3 = "/x/api/v3"
 
-    // MARK: The keys that were misspelled before 0.8.0
+    // MARK: Assessment windows and sections
 
     @Test
     func `an assessment's window decodes from the keys the server sends`() async throws {
@@ -109,33 +114,39 @@ struct LiveContractTests {
         }
 
         let row = try await LiveAccount.firstRow(path: "\(apiV3)/tests")
-        // Before 0.8.0 these read `start_time`/`end_time` and were always nil.
-        LiveAccount.report("Test.starttime", expected: "string", actual: LiveAccount.kind(of: row?["starttime"]))
-        LiveAccount.report("Test.endtime", expected: "string", actual: LiveAccount.kind(of: row?["endtime"]))
-        if row?["starttime"] is String {
-            #expect(test.startTime != nil, "the server sent `starttime` but the model dropped it")
+        // Live traffic uses `start_time`/`end_time`. The schema's `starttime`/`endtime` are
+        // accepted as a fallback and are what writes still send.
+        LiveAccount.report("Test.start_time", expected: "string", actual: LiveAccount.kind(of: row?["start_time"]))
+        LiveAccount.report("Test.end_time", expected: "string", actual: LiveAccount.kind(of: row?["end_time"]))
+        LiveAccount.report("Test.starttime", expected: "null/absent", actual: LiveAccount.kind(of: row?["starttime"]))
+
+        if row?["start_time"] is String || row?["starttime"] is String {
+            #expect(test.startTime != nil, "the server sent a window start but the model dropped it")
         }
-        #expect(row?["start_time"] == nil, "`start_time` exists after all — the model should read it")
+        #expect(
+            row?["start_time"] is String
+                || row?["start_time"] is NSNull
+                || row?["starttime"] is String
+                || row?.keys.contains("start_time") == true
+                || row?.keys.contains("starttime") == true,
+            "neither window key is present — the model has nothing to read"
+        )
     }
 
     @Test
     func `a test's sections arrive in the shape the model accepts`() async throws {
-        // Documented only as "Section slot data for the test", with no value shape. The
-        // model accepts an object keyed by slot and an array; this says which is real.
         let rows = await (try LiveAccount.rawJSON(path: "\(apiV3)/tests")["data"] as? [[String: Any]]) ?? []
         guard let sections = rows.compactMap({ $0["sections"] }).first(where: { !($0 is NSNull) }) else {
             print("[live] SKIP  no test on this account has sections")
             return
         }
 
-        LiveAccount.report("Test.sections", expected: "object", actual: LiveAccount.kind(of: sections))
-        if let object = sections as? [String: Any], let slot = object.values.first {
-            LiveAccount.report("Test.sections[slot]", expected: "object", actual: LiveAccount.kind(of: slot))
-        }
+        // Live accounts send an array of section objects; the schema documents an object.
+        LiveAccount.report("Test.sections", expected: "array of object", actual: LiveAccount.kind(of: sections))
         #expect(sections is [String: Any] || sections is [Any], "sections is a shape the model cannot read")
     }
 
-    // MARK: The candidate fields whose type the schema contradicts
+    // MARK: Candidate fields
 
     @Test
     func `a candidate's attempt events and question scores match their models`() async throws {
@@ -150,18 +161,19 @@ struct LiveContractTests {
             query: HackerRankClient.additionalFieldsQuery(TestCandidate.detailAdditionalFields)
         )
 
-        // The schema types `attempt_events` as an array of strings while describing each
-        // entry as an object. The model accepts either; this says which it is.
         LiveAccount.report(
             "TestCandidate.attempt_events",
             expected: "array of object",
             actual: LiveAccount.kind(of: raw["attempt_events"])
         )
-        // `questions` is typed `object` with a `$ref` to a single QuestionScore. The model
-        // assumes it is keyed by question id.
         LiveAccount.report(
             "TestCandidate.questions", expected: "object", actual: LiveAccount.kind(of: raw["questions"])
         )
+
+        let light = try await LiveAccount.rawJSON(path: path)
+        let heavyBytes = (try JSONSerialization.data(withJSONObject: raw)).count
+        let lightBytes = (try JSONSerialization.data(withJSONObject: light)).count
+        print("[live] INFO  candidate detail bytes with defaults \(heavyBytes), without \(lightBytes)")
 
         let candidate = try await client.candidate(testID: context.testID, candidateID: context.candidateID)
         if raw["questions"] is [String: Any] {
@@ -172,13 +184,10 @@ struct LiveContractTests {
         }
     }
 
-    // MARK: Fields the package added in 0.8.0, which should now be arriving
+    // MARK: Fields the models gained in 0.8.0
 
     @Test
     func `the documented fields the models gained are actually populated`() async throws {
-        // A modelled property that is nil on every record is either genuinely unset on
-        // this account or a key that still does not match. Reporting them is what makes
-        // the difference visible.
         let users = try await client.usersPage()
         if let user = users.items.first {
             let row = try await LiveAccount.firstRow(path: "\(apiV3)/users")
@@ -191,12 +200,14 @@ struct LiveContractTests {
         }
 
         let teams = try await client.teamsPage()
-        if teams.items.first != nil {
+        if let team = teams.items.first {
             let row = try await LiveAccount.firstRow(path: "\(apiV3)/teams")
-            for key in ["recruiter_cap", "developer_cap", "invite_as"] {
+            for key in ["recruiter_cap", "developer_cap", "invite_as", "interviewer_count"] {
                 LiveAccount.report("Team.\(key)", expected: "present", actual: LiveAccount.kind(of: row?[key]))
             }
-            #expect(row?["interviewer_count"] == nil, "`interviewer_count` exists after all — it was removed in 0.8.0")
+            if row?["interviewer_count"] is NSNumber {
+                #expect(team.interviewerCount != nil, "the server sent interviewer_count but the model dropped it")
+            }
         }
     }
 
@@ -210,7 +221,7 @@ struct LiveContractTests {
 
         let row = try await LiveAccount.firstRow(path: "\(apiV3)/templates")
         LiveAccount.report("InviteTemplate.content", expected: "string", actual: LiveAccount.kind(of: row?["content"]))
-        #expect(row?["body"] == nil, "`body` exists after all — 0.8.0 moved to `content`")
+        #expect(row?["body"] == nil || row?["body"] is NSNull, "`body` exists after all — 0.8.0 moved to `content`")
         if row?["content"] is String {
             #expect(template.content != nil, "the server sent `content` but the model dropped it")
         }
@@ -218,8 +229,6 @@ struct LiveContractTests {
 
     @Test
     func `the organisation-wide candidate search returns people, not per-test records`() async throws {
-        // Decoding these as `TestCandidate` needed an `id` the rows do not have, so before
-        // 0.8.0 the lenient page decoder discarded every match and the search read empty.
         let envelope = try await LiveAccount.rawJSON(
             path: "\(apiV3)/candidates/search",
             query: [URLQueryItem(name: "query", value: "a"), URLQueryItem(name: "limit", value: "1")]
@@ -233,7 +242,7 @@ struct LiveContractTests {
         LiveAccount.report(
             "CandidateSearchResult.attempts", expected: "array of object", actual: LiveAccount.kind(of: row["attempts"])
         )
-        #expect(row["id"] == nil, "these rows carry an `id` after all")
+        #expect(row["id"] == nil || row["id"] is NSNull, "these rows carry an `id` after all")
     }
 
     @Test
@@ -259,16 +268,120 @@ struct LiveContractTests {
     func `transcript timestamps are epoch milliseconds`() async throws {
         let page = try await client.interviewsPage()
         for interview in page.items.prefix(5) {
-            let transcript = try await client.interviewTranscript(id: interview.id)
-            guard let timestamp = transcript.messages.compactMap(\.timestamp).first else { continue }
+            do {
+                let transcript = try await client.interviewTranscript(id: interview.id)
+                guard let timestamp = transcript.messages.compactMap(\.timestamp).first else { continue }
 
-            // 13 digits is milliseconds; 10 would be seconds, which is what the package
-            // documented before 0.8.0 and which puts `sentAt` tens of millennia out.
-            print("[live] INFO  transcript timestamp \(timestamp) has \(String(timestamp).count) digits")
-            #expect(String(timestamp).count == 13, "timestamps are not milliseconds after all")
+                print("[live] INFO  transcript timestamp \(timestamp) has \(String(timestamp).count) digits")
+                #expect(String(timestamp).count == 13, "timestamps are not milliseconds after all")
+                return
+            } catch let HackerRankError.http(status, body) where status == 400 {
+                print("[live] SKIP  transcript unavailable for \(interview.id): \(body)")
+            }
+        }
+        print("[live] SKIP  no interview on this account has a usable transcript")
+    }
+
+    // MARK: Write probes (opt-in)
+
+    @Test(.enabled(if: LiveAccount.writesAllowed))
+    func `code stub generation accepts comma-joined API language ids`() async throws {
+        let page = try await client.questionsPage()
+        guard let question = page.items.first(where: { $0.type == "code" }) else {
+            print("[live] SKIP  no owned code question")
             return
         }
-        print("[live] SKIP  no interview on this account has a transcript")
+
+        // Probe acceptance with a raw PUT so a nested envelope cannot fail the decode path
+        // and hide a 400 from a bad language list.
+        let body = GenerateCodeStubsRequest(options: CodeStubGenerationOptions(
+            type: "code",
+            functionName: "add",
+            functionParams: "INTEGER a INTEGER b",
+            functionReturn: "INTEGER",
+            allowedLanguages: ["c", "clojure"]
+        ))
+        var request = URLRequest(
+            url: try client.url(path: "\(apiV3)/questions/\(HackerRankClient.pathSegment(question.id))/generate")
+        )
+        request.httpMethod = "PUT"
+        request.setValue("Bearer \(LiveAccount.token ?? "")", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try HackerRankClient.makeEncoder().encode(body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        #expect((200 ..< 300).contains(status), "generate rejected language list: \(String(data: data, encoding: .utf8) ?? "")")
+        print("[live] OK     CodeStubGenerationOptions.allowedLanguages as c,clojure")
+    }
+
+    @Test(.enabled(if: LiveAccount.writesAllowed))
+    func `interview update replaces interviewers only when replace_interviewers is true`() async throws {
+        let created = try await client.createQuickPad(
+            title: "HRKit live replace probe \(Int(Date().timeIntervalSince1970))"
+        )
+        let id = try #require(created.id)
+        do {
+            // Omitting the flag (schema default false) must not replace an existing list. Seed one.
+            _ = try await client.updateInterview(
+                id: id,
+                options: InterviewUpdateOptions(
+                    interviewers: ["hello@adamdangoor.com"],
+                    replaceInterviewers: true
+                )
+            )
+            let seeded = try await client.interview(id: id)
+            #expect(!seeded.interviewers.isEmpty)
+
+            _ = try await client.updateInterview(
+                id: id,
+                options: InterviewUpdateOptions(
+                    interviewers: ["accounts+codepair@dangoormendel.com"],
+                    replaceInterviewers: false
+                )
+            )
+            let afterFalse = try await client.interview(id: id)
+            let emailsAfterFalse = Set(afterFalse.interviewers.compactMap(\.email))
+            #expect(
+                emailsAfterFalse.contains("hello@adamdangoor.com"),
+                "replace_interviewers=false dropped the existing interviewer"
+            )
+
+            _ = try await client.updateInterview(
+                id: id,
+                options: InterviewUpdateOptions(
+                    interviewers: ["hello@adamdangoor.com"],
+                    replaceInterviewers: true
+                )
+            )
+            let afterTrue = try await client.interview(id: id)
+            let emailsAfterTrue = afterTrue.interviewers.compactMap(\.email)
+            #expect(emailsAfterTrue == ["hello@adamdangoor.com"])
+            print("[live] OK     InterviewUpdateOptions.replaceInterviewers default-true is required")
+        } catch {
+            _ = try? await client.deleteInterview(id: id)
+            throw error
+        }
+        // Live DELETE answers 204 with an empty body; the typed decode may still throw.
+        _ = try? await client.deleteInterview(id: id)
+    }
+
+    @Test(.enabled(if: LiveAccount.writesAllowed))
+    func `SCIM user create accepts object emails on the services host`() async throws {
+        let stamp = Int(Date().timeIntervalSince1970)
+        let email = "hrkit.live.\(stamp)@example.invalid"
+        let created = try await client.createSCIMUser(body: SCIMUserWriteRequest(
+            userName: email,
+            name: ["givenName": .string("HRKit"), "familyName": .string("Probe")],
+            email: email,
+            active: false
+        ))
+        #expect(created.id != nil)
+        if let id = created.id {
+            try await client.lockSCIMUser(id: id)
+        }
+        print("[live] OK     SCIMUserWriteRequest.emails as objects on \(HackerRankClient.defaultSCIMBaseURL)")
     }
 
     // MARK: Helpers

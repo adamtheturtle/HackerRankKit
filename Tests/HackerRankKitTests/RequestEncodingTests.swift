@@ -448,8 +448,14 @@ struct RequestEncodingTests {
         #expect(user["team_admin"] as? Bool == true)
         #expect(user["company_admin"] as? Bool == false)
         #expect((user["name"] as? [String: Any])?["givenName"] as? String == "Rhea")
-        // The required email list always carries the primary address first.
-        #expect(user["emails"] as? [String] == ["rhea@example.com", "rhea.recruiter@example.com"])
+        // The required email list always carries the primary address first, encoded as
+        // SCIM multi-valued objects — plain strings are rejected by the live service.
+        let emails = try #require(user["emails"] as? [[String: Any]])
+        #expect(emails.count == 2)
+        #expect(emails[0]["value"] as? String == "rhea@example.com")
+        #expect(emails[0]["primary"] as? Bool == true)
+        #expect(emails[1]["value"] as? String == "rhea.recruiter@example.com")
+        #expect(emails[1]["primary"] as? Bool == false)
         #expect(user["schemas"] as? [String] == ["urn:ietf:params:scim:schemas:core:2.0:User"])
 
         let group = try encodedObject(SCIMGroupWriteRequest(

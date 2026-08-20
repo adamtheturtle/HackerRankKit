@@ -57,6 +57,10 @@ public nonisolated struct CodeStubGenerationOptions: Sendable, Equatable {
     /// The function's return type, e.g. `INTEGER`.
     public let functionReturn: String?
     /// The languages to generate templates for.
+    ///
+    /// Encoded as a single comma-separated string of API language ids (`c,clojure`). The
+    /// schema's example `"C, Clojure"` is rejected live — display names and spaces after
+    /// the comma with capitalised ids both fail validation.
     public let allowedLanguages: [String]?
 
     public init(

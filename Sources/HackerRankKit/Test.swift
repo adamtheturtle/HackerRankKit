@@ -20,9 +20,15 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
     public let uniqueID: String?
     /// The test's display name.
     public let name: String
-    /// ISO-8601 start time of the test window (the wire key is `starttime`).
+    /// ISO-8601 start time of the test window.
+    ///
+    /// Live responses use `start_time`. The published schema spells it `starttime`; both
+    /// are accepted so a row from either shape still decodes.
     public let startTime: String?
-    /// ISO-8601 end time of the test window (the wire key is `endtime`).
+    /// ISO-8601 end time of the test window.
+    ///
+    /// Live responses use `end_time`. The published schema spells it `endtime`; both are
+    /// accepted so a row from either shape still decodes.
     public let endTime: String?
     /// Duration of the test in minutes.
     public let duration: Int?
@@ -93,8 +99,8 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
         case id
         case uniqueID = "unique_id"
         case name
-        case startTime = "starttime"
-        case endTime = "endtime"
+        case startTime = "start_time"
+        case endTime = "end_time"
         case duration
         case owner
         case instructions
@@ -127,6 +133,14 @@ public nonisolated struct Test: Codable, Hashable, Identifiable, Sendable {
         case enableMLPlagiarismAnalysis = "enable_ml_plagiarism_analysis"
         case enablePhotoIdentification = "enable_photo_identification"
         case ideConfig = "ide_config"
+    }
+
+    /// Schema-only aliases for the assessment window. Live traffic uses ``CodingKeys/startTime`` /
+    /// ``CodingKeys/endTime`` (`start_time` / `end_time`); the published document spells them
+    /// without the underscore.
+    private enum SchemaWindowKeys: String, CodingKey {
+        case starttime
+        case endtime
     }
 
     public init(
@@ -217,8 +231,13 @@ extension Test {
         id = try container.decode(String.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         uniqueID = container.loggedDecodeIfPresent(String.self, forKey: .uniqueID)
+        // Live rows use `start_time`/`end_time`. The published schema (and older fixtures)
+        // spell them without the underscore; accept either so a windowed test never looks unset.
+        let schemaKeys = try decoder.container(keyedBy: SchemaWindowKeys.self)
         startTime = container.loggedDecodeIfPresent(String.self, forKey: .startTime)
+            ?? schemaKeys.loggedDecodeIfPresent(String.self, forKey: .starttime)
         endTime = container.loggedDecodeIfPresent(String.self, forKey: .endTime)
+            ?? schemaKeys.loggedDecodeIfPresent(String.self, forKey: .endtime)
         duration = container.loggedDecodeIfPresent(Int.self, forKey: .duration)
         owner = container.loggedDecodeIfPresent(String.self, forKey: .owner)
         instructions = container.loggedDecodeIfPresent(String.self, forKey: .instructions)
@@ -358,10 +377,10 @@ public nonisolated struct TestSection: Codable, Hashable, Identifiable, Sendable
 }
 
 extension TestSection {
-    /// Decodes the test's `sections` field, which the API documents as an **object** of slot
-    /// data while some deployments (and this package's own older fixtures) return an array.
-    /// Both shapes are accepted — decoding only the array shape made a conforming response
-    /// throw, and the lenient page decoder then dropped the entire assessment row.
+    /// Decodes the test's `sections` field. Live accounts return an **array** of section
+    /// objects; the published schema documents an object of slot data. Both shapes are
+    /// accepted — decoding only one made the other throw, and the lenient page decoder then
+    /// dropped the entire assessment row.
     ///
     /// Each decoded section carries the slot it came from (the object key, or the array index)
     /// so ``TestSection/id`` stays unique across unnamed sections.
