@@ -79,13 +79,13 @@ public nonisolated enum MockFixtures {
 
     // MARK: - Tests
 
-    /// Page one of the tests list. The timestamp keys are the API's own `starttime`/`endtime`
-    /// spellings and `sections` is the documented slot **object**, so the demo data exercises
-    /// the same shapes a live account returns.
+    /// Page one of the tests list. Window keys and `sections` match what a live account
+    /// returns (`start_time`/`end_time`, and an array of section objects). The decoder also
+    /// accepts the schema's `starttime`/`endtime` and object-shaped `sections`.
     static let testsPage1 = #"""
     {"data":[
       {"id":"t1","unique_id":"backend-screen","name":"Backend Engineer Screen","state":"active",
-       "starttime":"2026-05-01T09:00:00Z","endtime":"2026-06-01T09:00:00Z","duration":90,
+       "start_time":"2026-05-01T09:00:00Z","end_time":"2026-06-01T09:00:00Z","duration":90,
        "languages":["python","go","java"],"cutoff_score":70,"tags":["backend","screening"],
        "library":"HackerRank","role_ids":["Backend Engineer"],"experience":["Senior"],
        "skills":["APIs","Data Structures"],"type":"Screen",
@@ -95,10 +95,10 @@ public nonisolated enum MockFixtures {
        "enable_ml_plagiarism_analysis":true,"enable_photo_identification":true,
        "test_admins":["u1","u2"],"ide_config":"default",
        "enable_proctoring":true,"instructions":"Solve all questions within the time limit.","questions":["q1","q2"],
-       "sections":{"s1":{"uuid":"s1","name":"Coding","questions":2,"duration":60},
-                   "s2":{"uuid":"s2","name":"Multiple Choice","questions":5,"duration":30}}},
+       "sections":[{"uuid":"s1","name":"Coding","questions":2,"duration":60},
+                   {"uuid":"s2","name":"Multiple Choice","questions":5,"duration":30}]},
       {"id":"t2","unique_id":"frontend-takehome","name":"Frontend Take-Home","state":"active",
-       "starttime":"2026-05-10T09:00:00Z","duration":120,"languages":["javascript","typescript"],
+       "start_time":"2026-05-10T09:00:00Z","duration":120,"languages":["javascript","typescript"],
        "cutoff_score":65,"tags":["frontend"],"library":"HackerRank","role_ids":["Frontend Engineer"],
        "skills":["React","Accessibility"],"type":"Take Home"},
       {"id":"t3","unique_id":"ds-quiz","name":"Data Structures Quiz","state":"archived",
@@ -110,7 +110,7 @@ public nonisolated enum MockFixtures {
     static let testsPage2 = #"""
     {"data":[
       {"id":"t4","unique_id":"sre-screen","name":"SRE On-Call Screen","state":"active",
-       "starttime":"2026-05-15T09:00:00Z","duration":75,"languages":["python","bash"],
+       "start_time":"2026-05-15T09:00:00Z","duration":75,"languages":["python","bash"],
        "cutoff_score":72,"tags":["sre","backend"],"library":"HackerRank","role_ids":["SRE"],
        "skills":["Incident Response","Shell"],"type":"Screen","draft":true},
       {"id":"t5","unique_id":"ml-fundamentals","name":"ML Fundamentals","state":"active",
@@ -124,7 +124,7 @@ public nonisolated enum MockFixtures {
     /// password, and MCQ scoring over the list shape.
     static let testDetail = #"""
     {"id":"t1","unique_id":"backend-screen","name":"Backend Engineer Screen","state":"active",
-     "starttime":"2026-05-01T09:00:00Z","endtime":"2026-06-01T09:00:00Z",
+     "start_time":"2026-05-01T09:00:00Z","end_time":"2026-06-01T09:00:00Z",
      "duration":90,"languages":["python","go","java"],"cutoff_score":70,"ide_config":"default",
      "short_login_url":"https://hr.gs/backend-screen",
      "public_login_url":"https://www.hackerrank.com/tests/backend-screen/login",
@@ -373,7 +373,7 @@ public nonisolated enum MockFixtures {
     static let teams = #"""
     {"data":[
       {"id":"tm1","name":"Backend Hiring","owner":"u1","created_at":"2026-04-01T09:00:00Z",
-       "recruiter_count":3,"developer_count":12,"recruiter_cap":5,"developer_cap":20,
+       "recruiter_count":3,"developer_count":12,"interviewer_count":2,"recruiter_cap":5,"developer_cap":20,
        "invite_as":"Example Recruiting",
        "locations":["London","Berlin"],"departments":["Engineering","Platform"]},
       {"id":"tm2","name":"Data Science","owner":"u1","created_at":"2026-04-15T09:00:00Z",
@@ -385,7 +385,7 @@ public nonisolated enum MockFixtures {
     /// The single-team object returned by `/teams/{id}` in the demo.
     static let singleTeam = #"""
     {"id":"tm1","name":"Backend Hiring","owner":"u1","created_at":"2026-04-01T09:00:00Z",
-     "recruiter_count":3,"developer_count":12,"recruiter_cap":5,"developer_cap":20,
+     "recruiter_count":3,"developer_count":12,"interviewer_count":2,"recruiter_cap":5,"developer_cap":20,
      "invite_as":"Example Recruiting",
      "locations":["London","Berlin"],"departments":["Engineering","Platform"]}
     """#

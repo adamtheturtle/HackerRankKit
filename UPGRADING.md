@@ -3,6 +3,21 @@
 Breaking changes by release, with the before/after for each. Releases not listed here
 were additive.
 
+## Unreleased (live contract corrections)
+
+A pass against a real account settled several 0.8.0 guesses that the published schema got
+wrong. None of these need a call-site change unless you depended on the wrong behaviour.
+
+- **`Test.startTime` / `endTime`** read live `start_time` / `end_time` (and still accept the
+  schema's `starttime` / `endtime`). Writes continue to send the schema spelling.
+- **`Team.interviewerCount`** is restored — live team rows still send `interviewer_count`.
+- **`SCIMUserWriteRequest.emails`** encode as `[{"value": …, "primary": …}]` objects. Plain
+  strings are rejected by the live SCIM service with HTTP 400.
+- **SCIM calls** go to `https://services.hackerrank.com/scim/v2` by default
+  (``HackerRankClient/defaultSCIMBaseURL``). `www.hackerrank.com/Users` is the web app, not
+  the JSON API. ``HackerRankClient/mock(unauthorized:key:)`` keeps both bases on the mock
+  host.
+
 ## 0.7.x → 0.8.0
 
 0.8.0 rebuilt the package's wire contract against HackerRank's published schema
@@ -127,7 +142,7 @@ the request while the server ignored it.
 | Type | Before | After |
 | --- | --- | --- |
 | `Test` | `role: String?` | `roleIDs: [String]?` |
-| `Team` | `interviewerCount` | removed — the schema has no such field. Use `recruiterCap` / `developerCap` / `inviteAs` |
+| `Team` | — | `interviewerCount` restored — live rows still send `interviewer_count` even though the schema omits it |
 | `InviteTemplate` | `body`, `access` | `content`; `access` removed (it is a list *query parameter*, not a field) |
 | `InterviewTemplate` | `title`, `description` | removed; `createdAt`, `status`, `user`, `roles`, `teamShare`, `questions`, `scorecard`, `importTemplate`, `editorAccess` added |
 | `TeamMembershipResult` | `id`, `email` | `team`, `user` |
@@ -146,12 +161,12 @@ gained over a hundred documented fields that used to be dropped.
 These alter behaviour while existing code still builds. They are the ones worth grepping
 for.
 
-- **Assessment windows now decode.** `Test.startTime` and `Test.endTime` read `starttime`
-  and `endtime`; in 0.7.x they were always `nil`. Code that treated `nil` as "no window"
-  will start seeing real dates.
-- **Tests with sections are no longer dropped.** `sections` is documented as an object;
-  declaring it as an array made a conforming response throw, and the lenient page decoder
-  discarded the whole assessment. Lists may get longer.
+- **Assessment windows now decode.** `Test.startTime` and `Test.endTime` read the live
+  keys `start_time` / `end_time`, and fall back to the schema's `starttime` / `endtime`.
+  Writes still send the schema spelling, which the server accepts and echoes back underscored.
+- **Tests with sections are no longer dropped.** Live accounts return `sections` as an
+  array of objects; the schema documents an object. Both shapes decode, and the lenient
+  page decoder no longer discards the whole assessment.
 - **Invite template content now decodes**, under `content` rather than the nonexistent
   `body`.
 - **Transcript timestamps are milliseconds.** `InterviewMessage.timestamp` is 13-digit

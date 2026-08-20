@@ -22,6 +22,10 @@ public nonisolated struct Team: Codable, Hashable, Identifiable, Sendable {
     public let recruiterCount: Int?
     /// Number of developers on the team.
     public let developerCount: Int?
+    /// Number of interviewers on the team.
+    ///
+    /// Absent from the published schema, but live team rows still send `interviewer_count`.
+    public let interviewerCount: Int?
     /// The maximum number of recruiters the team may have.
     public let recruiterCap: Int?
     /// The maximum number of developers the team may have.
@@ -40,6 +44,7 @@ public nonisolated struct Team: Codable, Hashable, Identifiable, Sendable {
         case createdAt = "created_at"
         case recruiterCount = "recruiter_count"
         case developerCount = "developer_count"
+        case interviewerCount = "interviewer_count"
         case recruiterCap = "recruiter_cap"
         case developerCap = "developer_cap"
         case inviteAs = "invite_as"
@@ -54,6 +59,7 @@ public nonisolated struct Team: Codable, Hashable, Identifiable, Sendable {
         createdAt: String? = nil,
         recruiterCount: Int? = nil,
         developerCount: Int? = nil,
+        interviewerCount: Int? = nil,
         recruiterCap: Int? = nil,
         developerCap: Int? = nil,
         inviteAs: String? = nil,
@@ -66,6 +72,7 @@ public nonisolated struct Team: Codable, Hashable, Identifiable, Sendable {
         self.createdAt = createdAt
         self.recruiterCount = recruiterCount
         self.developerCount = developerCount
+        self.interviewerCount = interviewerCount
         self.recruiterCap = recruiterCap
         self.developerCap = developerCap
         self.inviteAs = inviteAs

@@ -94,6 +94,10 @@ public nonisolated struct SCIMGroup: Decodable, Identifiable, Sendable {
 /// `name`, `userName`, and `emails` are required by the create schema, so they are
 /// parameters of the initializer rather than optionals: a body missing any of them is
 /// rejected, and there is no reason to let one be built.
+///
+/// `emails` is stored as plain addresses for the Swift API, but encoded as SCIM
+/// multi-valued objects (`{"value": …, "primary": …}`). The published create schema types
+/// the field as `array<string>`, but the live SCIM service rejects that shape with HTTP 400.
 public nonisolated struct SCIMUserWriteRequest: Encodable, Sendable, Equatable {
     public let userName: String
     public let name: [String: HackerRankJSONValue]
@@ -113,6 +117,11 @@ public nonisolated struct SCIMUserWriteRequest: Encodable, Sendable, Equatable {
         case teamAdmin = "team_admin"
         case companyAdmin = "company_admin"
         case schemas
+    }
+
+    private enum EmailKeys: String, CodingKey {
+        case value
+        case primary
     }
 
     /// - Parameters:
@@ -140,6 +149,24 @@ public nonisolated struct SCIMUserWriteRequest: Encodable, Sendable, Equatable {
         self.teamAdmin = teamAdmin
         self.companyAdmin = companyAdmin
         self.schemas = Self.cleanList(schemas)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(userName, forKey: .userName)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(active, forKey: .active)
+        try container.encodeIfPresent(role, forKey: .role)
+        try container.encodeIfPresent(teamAdmin, forKey: .teamAdmin)
+        try container.encodeIfPresent(companyAdmin, forKey: .companyAdmin)
+        try container.encodeIfPresent(schemas, forKey: .schemas)
+
+        var emailsContainer = container.nestedUnkeyedContainer(forKey: .emails)
+        for (index, address) in emails.enumerated() {
+            var entry = emailsContainer.nestedContainer(keyedBy: EmailKeys.self)
+            try entry.encode(address, forKey: .value)
+            try entry.encode(index == 0, forKey: .primary)
+        }
     }
 
     private static func cleanList(_ values: [String]?) -> [String]? {

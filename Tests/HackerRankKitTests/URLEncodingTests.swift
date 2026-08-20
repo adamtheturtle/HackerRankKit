@@ -22,7 +22,7 @@ struct URLEncodingTests {
         _ = try await client.scimUser(id: "ada+test@example.com")
 
         // Exactly one encoding: `%2B`/`%40`, never the doubly-encoded `%252B`/`%2540`.
-        #expect(recorder.urls == ["https://www.hackerrank.com/Users/ada%2Btest%40example.com"])
+        #expect(recorder.urls == ["https://services.hackerrank.com/scim/v2/Users/ada%2Btest%40example.com"])
     }
 
     @Test
