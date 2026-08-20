@@ -312,7 +312,10 @@ struct LiveContractTests {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        #expect((200 ..< 300).contains(status), "generate rejected language list: \(String(data: data, encoding: .utf8) ?? "")")
+        #expect(
+            (200 ..< 300).contains(status),
+            "generate rejected language list: \(String(data: data, encoding: .utf8) ?? "")"
+        )
         print("[live] OK     CodeStubGenerationOptions.allowedLanguages as c,clojure")
     }
 
