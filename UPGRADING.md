@@ -3,7 +3,7 @@
 Breaking changes by release, with the before/after for each. Releases not listed here
 were additive.
 
-## Unreleased (live contract corrections)
+## 0.8.0 → 0.8.1
 
 A pass against a real account settled several 0.8.0 guesses that the published schema got
 wrong. None of these need a call-site change unless you depended on the wrong behaviour.
