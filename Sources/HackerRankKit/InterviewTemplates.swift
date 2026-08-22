@@ -23,7 +23,12 @@ public nonisolated struct InterviewTemplate: Decodable, Hashable, Identifiable, 
     public let user: Int?
     /// Unique ids of the roles the template is associated with.
     public let roles: [String]?
-    /// Team sharing permission level: 0 none, 1 read, 2 write, 3 delete.
+    /// Legacy team sharing permission level: 0 none, 1 read, 2 write, 3 delete.
+    ///
+    /// The server still sends this, but it no longer controls anything: HackerRank
+    /// deprecated the field and the write endpoints ignore it. Read a template's real
+    /// access from ``editorAccess``, and change it with
+    /// ``HackerRankClient/shareInterviewTemplate(id:grants:)``.
     public let teamShare: Int?
     /// Identifiers of the questions in the template.
     public let questions: [String]?
@@ -112,7 +117,6 @@ nonisolated struct CreateInterviewTemplateRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case name
         case roleID = "role_id"
-        case teamShare = "team_share"
         case questionIDs = "question_ids"
     }
 
@@ -120,26 +124,24 @@ nonisolated struct CreateInterviewTemplateRequest: Encodable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(name, forKey: .name)
         try container.encodeIfPresent(options.roleID, forKey: .roleID)
-        try container.encodeIfPresent(options.teamShare, forKey: .teamShare)
         try container.encodeIfPresent(options.questionIDs, forKey: .questionIDs)
     }
 }
 
 /// Optional fields for creating an interview template.
+///
+/// There is no sharing field here: `team_share` is deprecated and ignored, so share a
+/// template after creating it with ``HackerRankClient/shareInterviewTemplate(id:grants:)``.
 public nonisolated struct InterviewTemplateCreateOptions: Sendable, Equatable {
     /// Unique id of the role the template targets.
     public let roleID: String?
-    /// Team sharing permission level: 0 none, 1 read, 2 write, 3 delete. The server
-    /// defaults to 1 (read) when this is omitted.
-    public let teamShare: Int?
     /// Identifiers of the questions to add to the template. These are **integers** on the
     /// create endpoint, under `question_ids`.
     public let questionIDs: [Int]?
 
-    public init(roleID: String? = nil, teamShare: Int? = nil, questionIDs: [Int]? = nil) {
+    public init(roleID: String? = nil, questionIDs: [Int]? = nil) {
         let trimmedRole = roleID?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.roleID = trimmedRole?.isEmpty == false ? trimmedRole : nil
-        self.teamShare = teamShare
         self.questionIDs = questionIDs
     }
 }
@@ -152,7 +154,6 @@ nonisolated struct UpdateInterviewTemplateRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case name
         case roleID = "role_id"
-        case teamShare = "team_share"
         case scorecardID = "scorecard_id"
     }
 
@@ -160,7 +161,6 @@ nonisolated struct UpdateInterviewTemplateRequest: Encodable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(options.name, forKey: .name)
         try container.encodeIfPresent(options.roleID, forKey: .roleID)
-        try container.encodeIfPresent(options.teamShare, forKey: .teamShare)
         try container.encodeIfPresent(options.scorecardID, forKey: .scorecardID)
     }
 }
@@ -169,26 +169,135 @@ nonisolated struct UpdateInterviewTemplateRequest: Encodable {
 ///
 /// The update endpoint accepts neither `questions` nor `question_ids`: a template's
 /// question list is set when it is created, and offering to change it here would promise
-/// something the server does not do.
+/// something the server does not do. Sharing is not here either — `team_share` is
+/// deprecated and ignored; use ``HackerRankClient/shareInterviewTemplate(id:grants:)``.
 public nonisolated struct InterviewTemplateUpdateOptions: Sendable, Equatable {
     /// The template's name.
     public let name: String?
     /// Unique id of the role the template targets.
     public let roleID: String?
-    /// Team sharing permission level: 0 none, 1 read, 2 write, 3 delete.
-    public let teamShare: Int?
     /// Identifier of the scorecard to attach to the template.
     public let scorecardID: Int?
 
-    public init(name: String? = nil, roleID: String? = nil, teamShare: Int? = nil, scorecardID: Int? = nil) {
+    public init(name: String? = nil, roleID: String? = nil, scorecardID: Int? = nil) {
         self.name = Self.nonBlank(name)
         self.roleID = Self.nonBlank(roleID)
-        self.teamShare = teamShare
         self.scorecardID = scorecardID
     }
 
     private static func nonBlank(_ value: String?) -> String? {
         let result = value?.trimmingCharacters(in: .whitespacesAndNewlines)
         return result?.isEmpty == false ? result : nil
+    }
+}
+
+// MARK: - Explicit sharing
+
+/// Who an interview template's access is granted to or revoked from — the `rollable` of
+/// an `ExplicitSharingRoleGrant`.
+///
+/// Team ids come from ``HackerRankClient/teamsPage(after:)`` and user ids from
+/// ``HackerRankClient/usersPage(after:)``. ``company`` shares with the whole
+/// organisation and names no id.
+public nonisolated enum InterviewTemplateShareTarget: Hashable, Sendable {
+    /// One person.
+    case user(id: String)
+    /// Everyone on a team.
+    case team(id: String)
+    /// Everyone in the organisation.
+    case company
+
+    /// The `rollable_type` the API names this target by.
+    var rollableType: String {
+        switch self {
+        case .user: "user"
+        case .team: "team"
+        case .company: "company"
+        }
+    }
+
+    /// The `rollable_id`, which a whole-company grant does not carry.
+    var rollableID: String? {
+        switch self {
+        case let .user(id), let .team(id): id
+        case .company: nil
+        }
+    }
+}
+
+/// The access an explicit sharing grant carries.
+public nonisolated enum InterviewTemplateShareRole: String, CaseIterable, Sendable {
+    /// May open the template but not change it.
+    case viewer
+    /// May open and edit the template.
+    case editor
+}
+
+/// One sharing grant: who to share a template with, and with what access.
+public nonisolated struct InterviewTemplateShareGrant: Hashable, Sendable {
+    /// The person, team, or company being granted access.
+    public let target: InterviewTemplateShareTarget
+    /// The access they are granted.
+    public let role: InterviewTemplateShareRole
+
+    public init(target: InterviewTemplateShareTarget, role: InterviewTemplateShareRole) {
+        self.target = target
+        self.role = role
+    }
+}
+
+/// The acknowledgement returned by a sharing change.
+///
+/// The revoke endpoint documents no response body at all and the grant endpoint's `model`
+/// is documented only as an empty array, so every field here is optional: the call
+/// succeeding is the result, and these are what the server chose to say about it.
+public nonisolated struct InterviewTemplateSharingResult: Decodable, Sendable {
+    /// Whether the server reports the roles were applied.
+    public let status: Bool?
+    /// The server's message, e.g. `"Successfully updated"`.
+    public let message: String?
+}
+
+/// One entry of `explicit_roles`: an `ExplicitSharingRoleGrant` when it carries a role, an
+/// `ExplicitSharingRoleRevoke` when it does not.
+nonisolated struct InterviewTemplateSharingEntry: Encodable {
+    let target: InterviewTemplateShareTarget
+    let role: InterviewTemplateShareRole?
+
+    enum CodingKeys: String, CodingKey {
+        case rollableType = "rollable_type"
+        case rollableID = "rollable_id"
+        case roleName = "role_name"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(target.rollableType, forKey: .rollableType)
+        // The schema documents `rollable_id` as an integer, while the ids the team and
+        // user lists hand out are opaque strings. A numeric id is sent as a number and
+        // anything else as the string it is, rather than mangling one into the other.
+        if let id = target.rollableID {
+            if let numeric = Int(id) {
+                try container.encode(numeric, forKey: .rollableID)
+            } else {
+                try container.encode(id, forKey: .rollableID)
+            }
+        }
+        try container.encodeIfPresent(role?.rawValue, forKey: .roleName)
+    }
+}
+
+/// The body sent to the explicit-sharing endpoints: `explicit_roles`, one entry per
+/// target. Grants name a `role_name`; revocations do not.
+nonisolated struct InterviewTemplateSharingRequest: Encodable {
+    let entries: [InterviewTemplateSharingEntry]
+
+    enum CodingKeys: String, CodingKey {
+        case explicitRoles = "explicit_roles"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(entries, forKey: .explicitRoles)
     }
 }

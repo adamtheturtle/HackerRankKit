@@ -682,6 +682,69 @@ public struct HackerRankClient {
         )
     }
 
+    /// Shares an interview template
+    /// (`POST /interview_templates/{template_id}/explicit_sharing_roles/update_access`).
+    ///
+    /// This is the only way to give anyone else access to a template. The old `team_share`
+    /// field is deprecated and the server ignores it, so sharing is always a separate call
+    /// after the create or update. Team ids come from ``teamsPage(after:)`` and user ids
+    /// from ``usersPage(after:)``.
+    ///
+    /// ```swift
+    /// let owners = try await client.teamsPage().items.first { $0.name == "Owners" }
+    /// try await client.shareInterviewTemplate(
+    ///     id: 101, grants: [.init(target: .team(id: owners.id), role: .editor)]
+    /// )
+    /// ```
+    ///
+    /// - Throws: ``HackerRankError/http(_:_:)`` with status 0 when `grants` is empty,
+    ///   before any request is made — the endpoint requires at least one role.
+    @discardableResult
+    public func shareInterviewTemplate(
+        id: Int,
+        grants: [InterviewTemplateShareGrant]
+    ) async throws -> InterviewTemplateSharingResult {
+        guard !grants.isEmpty else {
+            throw HackerRankError.http(0, "Sharing an interview template needs at least one grant.")
+        }
+
+        return try await send(
+            InterviewTemplateSharingResult.self,
+            method: "POST",
+            path: "\(Self.apiV3)/interview_templates/\(id)/explicit_sharing_roles/update_access",
+            body: InterviewTemplateSharingRequest(
+                entries: grants.map { .init(target: $0.target, role: $0.role) }
+            )
+        )
+    }
+
+    /// Revokes sharing access to an interview template
+    /// (`DELETE /interview_templates/{template_id}/explicit_sharing_roles/remove_access`).
+    ///
+    /// The counterpart to ``shareInterviewTemplate(id:grants:)``: the targets are named
+    /// without a role, because a revocation removes whichever role they hold.
+    ///
+    /// - Throws: ``HackerRankError/http(_:_:)`` with status 0 when `targets` is empty,
+    ///   before any request is made.
+    @discardableResult
+    public func unshareInterviewTemplate(
+        id: Int,
+        from targets: [InterviewTemplateShareTarget]
+    ) async throws -> InterviewTemplateSharingResult {
+        guard !targets.isEmpty else {
+            throw HackerRankError.http(0, "Unsharing an interview template needs at least one target.")
+        }
+
+        return try await send(
+            InterviewTemplateSharingResult.self,
+            method: "DELETE",
+            path: "\(Self.apiV3)/interview_templates/\(id)/explicit_sharing_roles/remove_access",
+            body: InterviewTemplateSharingRequest(
+                entries: targets.map { .init(target: $0, role: nil) }
+            )
+        )
+    }
+
     /// Deletes an interview template (`DELETE /interview_templates/{template_id}`).
     @discardableResult
     public func deleteInterviewTemplate(id: Int) async throws -> InterviewTemplateWriteResult {

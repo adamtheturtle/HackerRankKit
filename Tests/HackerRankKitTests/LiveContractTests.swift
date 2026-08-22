@@ -371,6 +371,36 @@ struct LiveContractTests {
     }
 
     @Test(.enabled(if: LiveAccount.writesAllowed))
+    func `a template is shared with a team id from the teams list, not by team_share`() async throws {
+        let teams = try await client.teamsPage()
+        guard let team = teams.items.first else {
+            print("[live] SKIP  no teams on this account")
+            return
+        }
+
+        let created = try await client.createInterviewTemplate(
+            name: "HRKit live sharing probe \(Int(Date().timeIntervalSince1970))"
+        )
+        let id = try #require(created.id)
+        do {
+            // The schema types `rollable_id` as an integer while `/teams` hands out opaque
+            // strings; this is the check that says which the server actually accepts.
+            print("[live] INFO  team id \(team.id) sent as \(Int(team.id) == nil ? "string" : "number")")
+            let shared = try await client.shareInterviewTemplate(
+                id: id, grants: [InterviewTemplateShareGrant(target: .team(id: team.id), role: .editor)]
+            )
+            print("[live] OK     shared template \(id) with team \(team.id): \(shared.message ?? "no message")")
+
+            _ = try await client.unshareInterviewTemplate(id: id, from: [.team(id: team.id)])
+            print("[live] OK     revoked team \(team.id)'s access to template \(id)")
+        } catch {
+            _ = try? await client.deleteInterviewTemplate(id: id)
+            throw error
+        }
+        _ = try? await client.deleteInterviewTemplate(id: id)
+    }
+
+    @Test(.enabled(if: LiveAccount.writesAllowed))
     func `SCIM user create accepts object emails on the services host`() async throws {
         let stamp = Int(Date().timeIntervalSince1970)
         let email = "hrkit.live.\(stamp)@example.invalid"

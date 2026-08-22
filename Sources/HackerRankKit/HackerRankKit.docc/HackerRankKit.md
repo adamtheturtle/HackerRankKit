@@ -88,6 +88,21 @@ let badToken = HackerRankClient.mock(unauthorized: true) // every request answer
 - ``InterviewTranscript``
 - ``InterviewMessage``
 
+### Interview templates
+
+Sharing is its own endpoint pair, not a field on the template: the schema's `team_share`
+is deprecated and the server ignores it.
+
+- ``InterviewTemplate``
+- ``InterviewTemplateFilter``
+- ``InterviewTemplateCreateOptions``
+- ``InterviewTemplateUpdateOptions``
+- ``InterviewTemplateShareGrant``
+- ``InterviewTemplateShareTarget``
+- ``InterviewTemplateShareRole``
+- ``InterviewTemplateSharingResult``
+- ``InterviewTemplateWriteResult``
+
 ### Organization
 
 - ``User``

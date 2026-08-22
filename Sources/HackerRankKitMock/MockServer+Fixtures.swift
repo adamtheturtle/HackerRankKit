@@ -57,6 +57,12 @@ public nonisolated enum MockFixtures {
     {"message":"Success"}
     """#
 
+    /// The acknowledgement returned when an interview template's explicit sharing roles
+    /// are granted or revoked in the demo.
+    static let interviewTemplateSharing = #"""
+    {"model":[],"status":true,"message":"Successfully updated"}
+    """#
+
     /// The record returned when a team is created in the demo.
     static let createdTeam = #"""
     {"id":"tm-created","name":"New Team","owner":"u1"}

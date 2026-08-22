@@ -144,6 +144,13 @@ nonisolated enum MockResponses {
         Route("GET", "\(apiV3)/interview_templates") { MockFixtures.interviewTemplates },
         Route("POST", "\(apiV3)/interview_templates", status: 201) { MockFixtures.interviewTemplate },
         Route("GET", "\(apiV3)/interview_templates/*") { MockFixtures.interviewTemplate },
+        // Sharing is its own pair of endpoints; the deprecated `team_share` field does nothing.
+        Route("POST", "\(apiV3)/interview_templates/*/explicit_sharing_roles/update_access") {
+            MockFixtures.interviewTemplateSharing
+        },
+        Route("DELETE", "\(apiV3)/interview_templates/*/explicit_sharing_roles/remove_access") {
+            MockFixtures.interviewTemplateSharing
+        },
         Route("PUT", "\(apiV3)/interview_templates/*") { MockFixtures.interviewTemplate },
         // A template delete answers with a message, not with the template record.
         Route("DELETE", "\(apiV3)/interview_templates/*") { MockFixtures.deletedInterviewTemplate },

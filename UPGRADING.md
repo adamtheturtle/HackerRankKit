@@ -3,6 +3,41 @@
 Breaking changes by release, with the before/after for each. Releases not listed here
 were additive.
 
+## 0.8.1 → 0.9.0
+
+### Interview template sharing no longer goes through `team_share`
+
+HackerRank's documentation used to present `team_share` as the field that controls who can
+see a template. It does not: the parameter is deprecated and the server ignores it, so
+every write that set it was a no-op that looked like it worked. Sharing is now its own
+endpoint pair, and `teamShare` is gone from both option types.
+
+```swift
+// Before — silently ignored by the server
+try await client.createInterviewTemplate(
+    name: "Backend Pairing", options: .init(roleID: "8b1o41tbpiq", teamShare: 2)
+)
+
+// After — create, then grant access to a team from the teams list
+let template = try await client.createInterviewTemplate(
+    name: "Backend Pairing", options: .init(roleID: "8b1o41tbpiq")
+)
+if let id = template.id,
+   let owners = try await client.teamsPage().items.first(where: { $0.name == "Owners" }) {
+    try await client.shareInterviewTemplate(
+        id: id, grants: [.init(target: .team(id: owners.id), role: .editor)]
+    )
+}
+```
+
+Revoke with ``HackerRankClient/unshareInterviewTemplate(id:from:)``. A grant's target is a
+team, a single user, or the whole company, and its role is `.viewer` or `.editor`. Both
+calls reject an empty list locally, because the endpoint requires at least one role.
+
+`InterviewTemplate.teamShare` is kept — the server still sends it — but it now documents
+what it is: a legacy value that controls nothing. Read ``InterviewTemplate/editorAccess``
+for the access the current user actually has.
+
 ## 0.8.0 → 0.8.1
 
 A pass against a real account settled several 0.8.0 guesses that the published schema got
