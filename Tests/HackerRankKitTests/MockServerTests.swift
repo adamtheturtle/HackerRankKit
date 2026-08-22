@@ -349,6 +349,16 @@ struct MockServerTests {
         #expect(interviewTemplate.importTemplate == true)
         #expect(interviewTemplate.editorAccess == true)
         #expect(interviewTemplate.createdAt == "2026-04-10T09:00:00Z")
+        // Sharing is a pair of endpoints of its own — `team_share` above is the deprecated
+        // field the server ignores.
+        let shared = try await client.shareInterviewTemplate(
+            id: 101, grants: [InterviewTemplateShareGrant(target: .team(id: "tm1"), role: .editor)]
+        )
+        #expect(shared.status == true)
+        #expect(shared.message == "Successfully updated")
+        let unshared = try await client.unshareInterviewTemplate(id: 101, from: [.team(id: "tm1"), .company])
+        #expect(unshared.status == true)
+
         let deletedTemplate = try await client.deleteInterviewTemplate(id: 101)
         #expect(deletedTemplate.message == "Success")
 

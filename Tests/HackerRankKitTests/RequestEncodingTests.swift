@@ -570,28 +570,59 @@ struct RequestEncodingTests {
     func `interview template writes encode each endpoint's own fields`() throws {
         let created = try encodedObject(CreateInterviewTemplateRequest(
             name: "Backend Template",
-            options: InterviewTemplateCreateOptions(roleID: "8b1o41tbpiq", teamShare: 2, questionIDs: [1_939_659])
+            options: InterviewTemplateCreateOptions(roleID: "8b1o41tbpiq", questionIDs: [1_939_659])
         ))
         #expect(created["name"] as? String == "Backend Template")
         #expect(created["role_id"] as? String == "8b1o41tbpiq")
-        #expect(created["team_share"] as? Int == 2)
         // Questions go under `question_ids`, as integers.
         #expect(created["question_ids"] as? [Int] == [1_939_659])
-        for absent in ["title", "description", "tags", "metadata", "questions"] {
+        // `team_share` is deprecated and ignored by the server; sharing is its own endpoint.
+        for absent in ["title", "description", "tags", "metadata", "questions", "team_share"] {
             #expect(created[absent] == nil, "\(absent) is not a documented template create field")
         }
 
         let updated = try encodedObject(UpdateInterviewTemplateRequest(
             options: InterviewTemplateUpdateOptions(
-                name: "Renamed Template", roleID: "8b1o41tbpiq", teamShare: 1, scorecardID: 98765
+                name: "Renamed Template", roleID: "8b1o41tbpiq", scorecardID: 98765
             )
         ))
         #expect(updated["name"] as? String == "Renamed Template")
         #expect(updated["role_id"] as? String == "8b1o41tbpiq")
-        #expect(updated["team_share"] as? Int == 1)
         #expect(updated["scorecard_id"] as? Int == 98765)
+        #expect(updated["team_share"] == nil)
         // The update endpoint sets no question list at all.
         #expect(updated["question_ids"] == nil)
         #expect(updated["questions"] == nil)
+    }
+
+    @Test
+    func `interview template sharing encodes one explicit role per target`() throws {
+        let shared = try encodedObject(InterviewTemplateSharingRequest(entries: [
+            .init(target: .team(id: "14bd8ec8b071"), role: .editor),
+            .init(target: .user(id: "12345"), role: .viewer),
+            .init(target: .company, role: .viewer)
+        ]))
+        let roles = try #require(shared["explicit_roles"] as? [[String: Any]])
+        #expect(roles.count == 3)
+        #expect(roles[0]["rollable_type"] as? String == "team")
+        // An opaque id stays the string the list endpoints handed out...
+        #expect(roles[0]["rollable_id"] as? String == "14bd8ec8b071")
+        #expect(roles[0]["role_name"] as? String == "editor")
+        // ...while a numeric one is sent as the integer the schema documents.
+        #expect(roles[1]["rollable_type"] as? String == "user")
+        #expect(roles[1]["rollable_id"] as? Int == 12345)
+        #expect(roles[1]["role_name"] as? String == "viewer")
+        // A whole-company grant names no id.
+        #expect(roles[2]["rollable_type"] as? String == "company")
+        #expect(roles[2]["rollable_id"] == nil)
+
+        // A revocation carries no role: it removes whichever one the target holds.
+        let revoked = try encodedObject(InterviewTemplateSharingRequest(entries: [
+            .init(target: .team(id: "tm1"), role: nil)
+        ]))
+        let revocations = try #require(revoked["explicit_roles"] as? [[String: Any]])
+        #expect(revocations[0]["rollable_type"] as? String == "team")
+        #expect(revocations[0]["rollable_id"] as? String == "tm1")
+        #expect(revocations[0]["role_name"] == nil)
     }
 }

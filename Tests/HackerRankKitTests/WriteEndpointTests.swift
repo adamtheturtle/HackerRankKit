@@ -189,7 +189,7 @@ struct WriteEndpointTests {
         let (client, recorder) = recordedClient()
         _ = try await client.createInterviewTemplate(
             name: "Backend Template",
-            options: InterviewTemplateCreateOptions(roleID: "role-1", teamShare: 2, questionIDs: [1_939_659])
+            options: InterviewTemplateCreateOptions(roleID: "role-1", questionIDs: [1_939_659])
         )
 
         let sent = try sentRequest(recorder)
@@ -197,8 +197,38 @@ struct WriteEndpointTests {
         #expect(sent.path == "/x/api/v3/interview_templates")
         #expect(sent.body["name"] as? String == "Backend Template")
         #expect(sent.body["role_id"] as? String == "role-1")
-        #expect(sent.body["team_share"] as? Int == 2)
         #expect(sent.body["question_ids"] as? [Int] == [1_939_659])
+    }
+
+    @Test
+    func `template sharing posts and deletes the explicit sharing roles`() async throws {
+        let (client, recorder) = recordedClient()
+        _ = try await client.shareInterviewTemplate(
+            id: 101, grants: [InterviewTemplateShareGrant(target: .team(id: "tm1"), role: .editor)]
+        )
+        _ = try await client.unshareInterviewTemplate(id: 101, from: [.team(id: "tm1")])
+
+        #expect(recorder.requests.map { $0.httpMethod ?? "" } == ["POST", "DELETE"])
+        #expect(recorder.requests.compactMap(\.url?.path) == [
+            "/x/api/v3/interview_templates/101/explicit_sharing_roles/update_access",
+            "/x/api/v3/interview_templates/101/explicit_sharing_roles/remove_access"
+        ])
+        let body = try #require(recorder.bodies.first)
+        let granted = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect((granted["explicit_roles"] as? [[String: Any]])?.first?["role_name"] as? String == "editor")
+    }
+
+    @Test
+    func `a sharing change with no targets never reaches the wire`() async throws {
+        let (client, recorder) = recordedClient()
+        // The endpoint requires at least one role, so an empty list is a guaranteed 400.
+        await #expect(throws: HackerRankError.self) {
+            _ = try await client.shareInterviewTemplate(id: 101, grants: [])
+        }
+        await #expect(throws: HackerRankError.self) {
+            _ = try await client.unshareInterviewTemplate(id: 101, from: [])
+        }
+        #expect(recorder.requests.isEmpty)
     }
 
     @Test
