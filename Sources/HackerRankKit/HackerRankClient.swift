@@ -1031,7 +1031,9 @@ public struct HackerRankClient {
     nonisolated func authorizedGET(_ url: URL) throws -> RESTRequest {
         guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
 
-        return rest.authorizedGET(url)
+        return RESTRequest(
+            url: url, method: "GET", headers: ["Authorization": "Bearer \(token)", "Accept": "application/json"]
+        )
     }
 
     /// GETs `path` (already percent-encoded) with retries, as ``rest``'s own `fetch` would,
