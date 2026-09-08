@@ -1,10 +1,8 @@
 # HackerRankKit
 
-An unofficial Swift client for the HackerRank for Work REST API, with typed models and a
-no-network mock backend.
+An unofficial Swift client for the HackerRank for Work REST API, with typed models and a no-network mock backend.
 
-[Documentation](https://swiftpackageindex.com/adamtheturtle/HackerRankKit/documentation/hackerrankkit) |
-[Swift Package Index](https://swiftpackageindex.com/adamtheturtle/HackerRankKit)
+[Documentation](https://swiftpackageindex.com/adamtheturtle/HackerRankKit/documentation/hackerrankkit) | [Swift Package Index](https://swiftpackageindex.com/adamtheturtle/HackerRankKit)
 
 ## Installation
 
@@ -12,17 +10,15 @@ no-network mock backend.
 .package(url: "https://github.com/adamtheturtle/HackerRankKit.git", from: "0.8.0")
 ```
 
-Releases before 0.8.0 modelled a wire contract that did not match the API, so 0.8.0 is
-the earliest version worth starting from. Upgrading from an earlier one? See
-[UPGRADING.md](UPGRADING.md).
+Releases before 0.8.0 modelled a wire contract that did not match the API, so 0.8.0 is the earliest version worth starting from.
+Upgrading from an earlier one?
+See [UPGRADING.md](UPGRADING.md).
 
-Add `HackerRankKit` to your app target and `HackerRankKitMock` to tests or demos that
-should run without the network.
+Add `HackerRankKit` to your app target and `HackerRankKitMock` to tests or demos that should run without the network.
 
 ## Products
 
-- `HackerRankKit`: Typed API client for tests, candidates, questions, interviews, users,
-  teams, and the audit log.
+- `HackerRankKit`: Typed API client for tests, candidates, questions, interviews, users, teams, and the audit log.
 - `HackerRankKitMock`: In-process fake API seeded with canned data.
 
 ## Usage
@@ -49,4 +45,5 @@ let created = try await client.createTest(
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT.
+See [LICENSE](LICENSE).

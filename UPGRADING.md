@@ -1,16 +1,15 @@
 # Upgrading HackerRankKit
 
-Breaking changes by release, with the before/after for each. Releases not listed here
-were additive.
+Breaking changes by release, with the before/after for each.
+Releases not listed here were additive.
 
 ## 0.8.1 → 0.9.0
 
 ### Interview template sharing no longer goes through `team_share`
 
-HackerRank's documentation used to present `team_share` as the field that controls who can
-see a template. It does not: the parameter is deprecated and the server ignores it, so
-every write that set it was a no-op that looked like it worked. Sharing is now its own
-endpoint pair, and `teamShare` is gone from both option types.
+HackerRank's documentation used to present `team_share` as the field that controls who can see a template.
+It does not: the parameter is deprecated and the server ignores it, so every write that set it was a no-op that looked like it worked.
+Sharing is now its own endpoint pair, and `teamShare` is gone from both option types.
 
 ```swift
 // Before — silently ignored by the server
@@ -30,43 +29,39 @@ if let id = template.id,
 }
 ```
 
-Revoke with ``HackerRankClient/unshareInterviewTemplate(id:from:)``. A grant's target is a
-team, a single user, or the whole company, and its role is `.viewer` or `.editor`. Both
-calls reject an empty list locally, because the endpoint requires at least one role.
+Revoke with ``HackerRankClient/unshareInterviewTemplate(id:from:)``.
+A grant's target is a team, a single user, or the whole company, and its role is `.viewer` or `.editor`.
+Both calls reject an empty list locally, because the endpoint requires at least one role.
 
-`InterviewTemplate.teamShare` is kept — the server still sends it — but it now documents
-what it is: a legacy value that controls nothing. Read ``InterviewTemplate/editorAccess``
-for the access the current user actually has.
+`InterviewTemplate.teamShare` remains because the server still sends it.
+Its documentation now identifies it as a legacy value that controls nothing.
+Read ``InterviewTemplate/editorAccess`` for the access the current user actually has.
 
 ## 0.8.0 → 0.8.1
 
-A pass against a real account settled several 0.8.0 guesses that the published schema got
-wrong. None of these need a call-site change unless you depended on the wrong behaviour.
+A pass against a real account settled several 0.8.0 guesses that the published schema got wrong.
+None of these need a call-site change unless you depended on the wrong behaviour.
 
-- **`Test.startTime` / `endTime`** read live `start_time` / `end_time` (and still accept the
-  schema's `starttime` / `endtime`). Writes continue to send the schema spelling.
+- **`Test.startTime` / `endTime`** read live `start_time` / `end_time` (and still accept the schema's `starttime` / `endtime`).
+  Writes continue to send the schema spelling.
 - **`Team.interviewerCount`** is restored — live team rows still send `interviewer_count`.
-- **`SCIMUserWriteRequest.emails`** encode as `[{"value": …, "primary": …}]` objects. Plain
-  strings are rejected by the live SCIM service with HTTP 400.
-- **SCIM calls** go to `https://services.hackerrank.com/scim/v2` by default
-  (``HackerRankClient/defaultSCIMBaseURL``). `www.hackerrank.com/Users` is the web app, not
-  the JSON API. ``HackerRankClient/mock(unauthorized:key:)`` keeps both bases on the mock
-  host.
+- **`SCIMUserWriteRequest.emails`** encode as `[{"value": …, "primary": …}]` objects.
+  Plain strings are rejected by the live SCIM service with HTTP 400.
+- **SCIM calls** go to `https://services.hackerrank.com/scim/v2` by default (``HackerRankClient/defaultSCIMBaseURL``).
+  `www.hackerrank.com/Users` is the web app, not the JSON API.
+  ``HackerRankClient/mock(unauthorized:key:)`` keeps both bases on the mock host.
 
 ## 0.7.x → 0.8.0
 
-0.8.0 rebuilt the package's wire contract against HackerRank's published schema
-(<https://www.hackerrank.com/apidoc>). The old contract was wrong in enough places that
-correcting it moved most of the public surface, so this upgrade is large — but almost
-every change is one the compiler will point at.
+0.8.0 rebuilt the package's wire contract against HackerRank's published schema (<https://www.hackerrank.com/apidoc>).
+The old contract was wrong in enough places that correcting it moved most of the public surface, so this upgrade is large — but almost every change is one the compiler will point at.
 
-Read [**Changes with no compiler error**](#changes-with-no-compiler-error) last and
-carefully: those are the ones that alter behaviour while the code still builds.
+Read [**Changes with no compiler error**](#changes-with-no-compiler-error) last and carefully: those are the ones that alter behaviour while the code still builds.
 
 ### Methods that gained required parameters
 
-The API rejects a create that omits these, so they are no longer optional. In 0.7.x the
-minimal call compiled and then failed against the live server.
+The API rejects a create that omits these, so they are no longer optional.
+In 0.7.x the minimal call compiled and then failed against the live server.
 
 ```swift
 // Before
@@ -98,8 +93,8 @@ try await client.createInterviewTemplate(name: "Backend Pairing")
 
 ### Methods that now return `Void`
 
-These four endpoints answer `204 No Content`. Decoding a record from an empty body made
-them report `HackerRankError.decode` *after* the mutation had already been applied.
+These four endpoints answer `204 No Content`.
+Decoding a record from an empty body made them report `HackerRankError.decode` *after* the mutation had already been applied.
 Returning normally is now the whole result.
 
 ```swift
@@ -142,20 +137,14 @@ print(interview.interview.title)       // was unavailable
 
 ### Option types that lost properties
 
-Each of these named a key the API does not define. Setting one looked like it configured
-the request while the server ignored it.
+Each of these named a key the API does not define.
+Setting one looked like it configured the request while the server ignored it.
 
-- `TestWriteOptions`: `library`, `skills`, `type` removed; `role: String?` became
-  `roleIDs: [String]?`.
-- `QuestionWriteOptions`: `status`, `maxScore`, `clearsMaxScore`, `skills` removed;
-  `internalNotes`, `mcqOptions`, and `answer` added.
-- `InterviewTemplateWriteOptions` is replaced by `InterviewTemplateCreateOptions` and
-  `InterviewTemplateUpdateOptions`, because the two endpoints accept different fields.
-  `title`, `description`, `tags`, and `metadata` are gone; `roleID`, `teamShare`,
-  `questionIDs` (create) and `scorecardID` (update) are new.
-- `CodeStubGenerationOptions`: `returnType` → `functionReturn`, `languages` →
-  `allowedLanguages`, and the `parameters: [CodeStubParameter]` array became a single
-  `functionParams` signature string such as `"INTEGER param1 STRING param2"`.
+- `TestWriteOptions`: `library`, `skills`, `type` removed; `role: String?` became `roleIDs: [String]?`.
+- `QuestionWriteOptions`: `status`, `maxScore`, `clearsMaxScore`, `skills` removed; `internalNotes`, `mcqOptions`, and `answer` added.
+- `InterviewTemplateWriteOptions` is replaced by `InterviewTemplateCreateOptions` and `InterviewTemplateUpdateOptions`, because the two endpoints accept different fields.
+  `title`, `description`, `tags`, and `metadata` are gone; `roleID`, `teamShare`, `questionIDs` (create) and `scorecardID` (update) are new.
+- `CodeStubGenerationOptions`: `returnType` → `functionReturn`, `languages` → `allowedLanguages`, and the `parameters: [CodeStubParameter]` array became a single `functionParams` signature string such as `"INTEGER param1 STRING param2"`.
   `CodeStubParameter` is gone.
 
 `CandidateInviteOptions` was renamed almost field for field:
@@ -187,35 +176,30 @@ the request while the server ignored it.
 | `QuestionCodeStub` | `init(language:code:)` | `init(language:body:head:tail:)` |
 | `SCIMUserWriteRequest` | every field optional | `userName`, `name`, and `email` are required parameters |
 
-Everything else is additive: `Test`, `TestCandidate`, `User`, `Team`, `Question`,
-`Interview`, `InterviewTemplate`, `InviteTemplate`, and `AuditLogEntry` between them
-gained over a hundred documented fields that used to be dropped.
+Everything else is additive: `Test`, `TestCandidate`, `User`, `Team`, `Question`, `Interview`, `InterviewTemplate`, `InviteTemplate`, and `AuditLogEntry` between them gained over a hundred documented fields that used to be dropped.
 
 ### Changes with no compiler error
 
-These alter behaviour while existing code still builds. They are the ones worth grepping
-for.
+These alter behaviour while existing code still builds.
+They are the ones worth grepping for.
 
-- **Assessment windows now decode.** `Test.startTime` and `Test.endTime` read the live
-  keys `start_time` / `end_time`, and fall back to the schema's `starttime` / `endtime`.
+- **Assessment windows now decode.**
+  `Test.startTime` and `Test.endTime` read the live keys `start_time` / `end_time`, and fall back to the schema's `starttime` / `endtime`.
   Writes still send the schema spelling, which the server accepts and echoes back underscored.
-- **Tests with sections are no longer dropped.** Live accounts return `sections` as an
-  array of objects; the schema documents an object. Both shapes decode, and the lenient
-  page decoder no longer discards the whole assessment.
-- **Invite template content now decodes**, under `content` rather than the nonexistent
-  `body`.
-- **Transcript timestamps are milliseconds.** `InterviewMessage.timestamp` is 13-digit
-  epoch ms, as the API returns. Anything doing
-  `Date(timeIntervalSince1970: Double(timestamp))` was producing dates tens of thousands
-  of years out; use `InterviewMessage.sentAt`.
-- **`AuditLogEntry.id` changed shape.** It now includes every distinguishing field, so
-  two changes to one resource in the same second no longer collide. Persisted ids from
-  0.7.x will not match.
-- **`candidate(testID:candidateID:)` sends `additional_fields` by default**, requesting
-  `questions`, `attempt_events`, `comments`, and `ip_address`. The response is richer and
-  heavier; pass `additionalFields: []` for the old, lighter read.
-- **`test(id:)` sends `additional_fields` too.** Without it the server omits every field
-  `TestDetail` models, so in 0.7.x that read could return nothing at all.
-- **`HackerRankKitMock` now answers 404/405.** A route the API does not expose is no
-  longer a canned success. Tests that leaned on the old catch-all will fail — which is
-  the point.
+- **Tests with sections are no longer dropped.**
+  Live accounts return `sections` as an array of objects; the schema documents an object.
+  Both shapes decode, and the lenient page decoder no longer discards the whole assessment.
+- **Invite template content now decodes**, under `content` rather than the nonexistent `body`.
+- **Transcript timestamps are milliseconds.**
+  `InterviewMessage.timestamp` is 13-digit epoch ms, as the API returns.
+  Anything doing `Date(timeIntervalSince1970: Double(timestamp))` was producing dates tens of thousands of years out; use `InterviewMessage.sentAt`.
+- **`AuditLogEntry.id` changed shape.**
+  It now includes every distinguishing field, so two changes to one resource in the same second no longer collide.
+  Persisted ids from 0.7.x will not match.
+- **`candidate(testID:candidateID:)` sends `additional_fields` by default**, requesting `questions`, `attempt_events`, `comments`, and `ip_address`.
+  The response is richer and heavier; pass `additionalFields: []` for the old, lighter read.
+- **`test(id:)` sends `additional_fields` too.**
+  Without it the server omits every field `TestDetail` models, so in 0.7.x that read could return nothing at all.
+- **`HackerRankKitMock` now answers 404/405.**
+  A route the API does not expose is no longer a canned success.
+  Tests that leaned on the old catch-all will fail — which is the point.
