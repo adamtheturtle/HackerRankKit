@@ -4,17 +4,11 @@ An unofficial Swift client for the HackerRank for Work REST API.
 
 ## Overview
 
-`HackerRankKit` is the lean wire layer for the [HackerRank for Work](https://www.hackerrank.com/work)
-v3 API: typed models for tests, candidates, questions, interviews, users, teams, and the
-audit log; encode-only request bodies; a raw ``HackerRankError``; and the
-``HackerRankClient`` that drives them all. The client wraps a generic paginated transport,
-so list calls follow the `next` cursor, idempotent GETs retry on transient failures, and
-JSON decoding happens off the main actor.
+`HackerRankKit` is the lean wire layer for the [HackerRank for Work](https://www.hackerrank.com/work) v3 API: typed models for tests, candidates, questions, interviews, users, teams, and the audit log; encode-only request bodies; a raw ``HackerRankError``; and the ``HackerRankClient`` that drives them all.
+The client wraps a generic paginated transport, so list calls follow the `next` cursor, idempotent GETs retry on transient failures, and JSON decoding happens off the main actor.
 
-The library is deliberately presentation-free and locale-free: it carries the facts the
-API returns and leaves how to phrase or display them to you. The companion
-`HackerRankKitMock` product ships an in-process fake of the API, backed by canned
-fixtures, for demo modes and tests with no network.
+The library is deliberately presentation-free and locale-free: it carries the facts the API returns and leaves how to phrase or display them to you.
+The companion `HackerRankKitMock` product ships an in-process fake of the API, backed by canned fixtures, for demo modes and tests with no network.
 
 > Note: This is an unofficial client and is not affiliated with or endorsed by HackerRank.
 
@@ -36,8 +30,8 @@ For regional deployments, pass a custom `baseURL`.
 
 ### Paging
 
-List methods return one ``Page`` plus a `next` cursor. Pass it back to fetch the
-following page until `next` is `nil`:
+List methods return one ``Page`` plus a `next` cursor.
+Pass it back to fetch the following page until `next` is `nil`:
 
 ```swift
 var cursor: String? = nil
@@ -50,8 +44,7 @@ repeat {
 
 ### Testing without a network
 
-Add the `HackerRankKitMock` product and use the mock client, which serves canned fixtures
-over an in-process `URLProtocol`:
+Add the `HackerRankKitMock` product and use the mock client, which serves canned fixtures over an in-process `URLProtocol`:
 
 ```swift
 import HackerRankKitMock
@@ -90,8 +83,7 @@ let badToken = HackerRankClient.mock(unauthorized: true) // every request answer
 
 ### Interview templates
 
-Sharing is its own endpoint pair, not a field on the template: the schema's `team_share`
-is deprecated and the server ignores it.
+Sharing is its own endpoint pair, not a field on the template: the schema's `team_share` is deprecated and the server ignores it.
 
 - ``InterviewTemplate``
 - ``InterviewTemplateFilter``
