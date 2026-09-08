@@ -183,15 +183,13 @@ Everything else is additive: `Test`, `TestCandidate`, `User`, `Team`, `Question`
 These alter behaviour while existing code still builds.
 They are the ones worth grepping for.
 
-- **Assessment windows now decode.**
-  `Test.startTime` and `Test.endTime` read the live keys `start_time` / `end_time`, and fall back to the schema's `starttime` / `endtime`.
+- **Assessment windows now decode.** `Test.startTime` and `Test.endTime` read the live keys `start_time` / `end_time`, and fall back to the schema's `starttime` / `endtime`.
   Writes still send the schema spelling, which the server accepts and echoes back underscored.
 - **Tests with sections are no longer dropped.**
   Live accounts return `sections` as an array of objects; the schema documents an object.
   Both shapes decode, and the lenient page decoder no longer discards the whole assessment.
 - **Invite template content now decodes**, under `content` rather than the nonexistent `body`.
-- **Transcript timestamps are milliseconds.**
-  `InterviewMessage.timestamp` is 13-digit epoch ms, as the API returns.
+- **Transcript timestamps are milliseconds.** `InterviewMessage.timestamp` is 13-digit epoch ms, as the API returns.
   Anything doing `Date(timeIntervalSince1970: Double(timestamp))` was producing dates tens of thousands of years out; use `InterviewMessage.sentAt`.
 - **`AuditLogEntry.id` changed shape.**
   It now includes every distinguishing field, so two changes to one resource in the same second no longer collide.
