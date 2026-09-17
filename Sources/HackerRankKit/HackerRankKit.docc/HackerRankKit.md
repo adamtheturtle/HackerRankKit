@@ -19,7 +19,7 @@ Construct a client with a personal access token, then call the typed endpoint me
 ```swift
 import HackerRankKit
 
-let client = HackerRankClient(token: "your-personal-access-token")
+let client = try HackerRankClient(token: "your-personal-access-token")
 
 let tests = try await client.testsPage()
 let created = try await client.createTest(name: "Phone screen")

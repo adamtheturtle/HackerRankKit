@@ -26,7 +26,7 @@ Add `HackerRankKit` to your app target and `HackerRankKitMock` to tests or demos
 ```swift
 import HackerRankKit
 
-let client = HackerRankClient(token: "your-personal-access-token")
+let client = try HackerRankClient(token: "your-personal-access-token")
 
 let tests = try await client.testsPage()
 // `duration`, `roleIDs`, and `experience` are required by the create API alongside the name.
