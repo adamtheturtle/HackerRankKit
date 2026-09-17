@@ -49,14 +49,14 @@ enum LiveAccount {
             .flatMap(URL.init(string:)) ?? HackerRankClient.defaultBaseURL
     }
 
-    static func client() -> HackerRankClient {
-        HackerRankClient(token: token ?? "", baseURL: baseURL)
+    static func client() throws -> HackerRankClient {
+        try HackerRankClient(token: token ?? "", baseURL: baseURL)
     }
 
     /// GETs `path` and returns the parsed JSON, so a check can ask what the server sent
     /// rather than what the model kept. Read-only by construction.
     static func rawJSON(path: String, query: [URLQueryItem] = []) async throws -> [String: Any] {
-        let client = client()
+        let client = try client()
         var request = URLRequest(url: try client.url(path: path, query: query))
         request.httpMethod = "GET"
         request.setValue("Bearer \(token ?? "")", forHTTPHeaderField: "Authorization")
@@ -100,7 +100,13 @@ enum LiveAccount {
 /// The checks behind issue #197. Skipped unless `HACKERRANK_TOKEN` is set.
 @Suite("Live wire contract", .enabled(if: LiveAccount.isConfigured))
 struct LiveContractTests {
-    private let client = LiveAccount.client()
+    private let client: HackerRankClient = {
+        do {
+            return try LiveAccount.client()
+        } catch {
+            preconditionFailure("Invalid live HackerRank URL: \(error)")
+        }
+    }()
     private let apiV3 = "/x/api/v3"
 
     // MARK: Assessment windows and sections

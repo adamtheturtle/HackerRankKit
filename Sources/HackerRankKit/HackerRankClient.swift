@@ -111,15 +111,16 @@ public struct HackerRankClient {
     ///   - baseURL: the account's base URL; defaults to ``defaultBaseURL``.
     ///   - scimBaseURL: the SCIM base URL; defaults to ``defaultSCIMBaseURL``.
     ///   - session: the URL session backing the transport; defaults to ``liveSession``.
+    /// - Throws: If `baseURL` is not an absolute HTTP(S) origin.
     public init(token: String,
                 baseURL: URL = Self.defaultBaseURL,
                 scimBaseURL: URL = Self.defaultSCIMBaseURL,
-                session: URLSession = Self.liveSession) {
+                session: URLSession = Self.liveSession) throws {
         self.token = token
         self.baseURL = baseURL
         self.scimBaseURL = scimBaseURL
         self.session = session
-        rest = PaginatedRESTClient(
+        rest = try PaginatedRESTClient(
             apiKey: token,
             baseURL: baseURL,
             transport: URLSessionTransport(session: session),
@@ -148,8 +149,8 @@ public struct HackerRankClient {
         token: String,
         baseURL: URL = Self.defaultBaseURL,
         scimBaseURL: URL = Self.defaultSCIMBaseURL
-    ) -> Self {
-        Self(token: token, baseURL: baseURL, scimBaseURL: scimBaseURL, session: liveSession)
+    ) throws -> Self {
+        try Self(token: token, baseURL: baseURL, scimBaseURL: scimBaseURL, session: liveSession)
     }
 
     /// Builds a configured decoder. A factory rather than a shared instance because

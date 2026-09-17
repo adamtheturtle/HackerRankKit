@@ -23,6 +23,7 @@ struct URLEncodingTests {
 
         // Exactly one encoding: `%2B`/`%40`, never the doubly-encoded `%252B`/`%2540`.
         #expect(recorder.urls == ["https://services.hackerrank.com/scim/v2/Users/ada%2Btest%40example.com"])
+        #expect(recorder.requests.first?.value(forHTTPHeaderField: "Authorization")?.hasPrefix("Bearer ") == true)
     }
 
     @Test

@@ -91,7 +91,11 @@ enum RecordedClient {
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [RecordingURLProtocol.self]
         let session = URLSession(configuration: config)
-        return (HackerRankClient(token: token, baseURL: baseURL, session: session), recorder)
+        do {
+            return (try HackerRankClient(token: token, baseURL: baseURL, session: session), recorder)
+        } catch {
+            preconditionFailure("Invalid recorded test URL: \(error)")
+        }
     }
 
     fileprivate nonisolated static func recorder(forBearer header: String?) -> RequestRecorder? {

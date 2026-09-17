@@ -19,11 +19,16 @@ extension HackerRankClient {
     public static func mock(unauthorized: Bool = false, key: String = "demo") -> Self {
         // The mock only intercepts `www.hackerrank.com`, including the SCIM `/Users` and
         // `/Groups` routes, so both bases point there rather than at the live SCIM host.
-        Self(
-            token: key,
-            baseURL: defaultBaseURL,
-            scimBaseURL: defaultBaseURL,
-            session: MockServer.session(unauthorized: unauthorized)
-        )
+        // Both URLs are fixed, valid HTTPS origins supplied by this package.
+        do {
+            return try Self(
+                token: key,
+                baseURL: defaultBaseURL,
+                scimBaseURL: defaultBaseURL,
+                session: MockServer.session(unauthorized: unauthorized)
+            )
+        } catch {
+            preconditionFailure("Invalid built-in HackerRank mock URL: \(error)")
+        }
     }
 }

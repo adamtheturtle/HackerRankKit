@@ -3,7 +3,15 @@
 Breaking changes by release, with the before/after for each.
 Releases not listed here were additive.
 
-## 0.8.1 → 0.9.0
+## 0.8.2 → 0.9.0
+
+`HackerRankClient(token:baseURL:scimBaseURL:session:)` and `HackerRankClient.live(...)` now throw if the API base URL is not an absolute HTTP(S) origin.
+Add `try` at construction sites and handle an invalid configured endpoint there.
+This follows the validation added by PaginatedRESTClient 0.5.0.
+
+The release also restores Bearer authentication for the separate HackerRank SCIM origin.
+
+## 0.8.1 → 0.8.2
 
 ### Interview template sharing no longer goes through `team_share`
 

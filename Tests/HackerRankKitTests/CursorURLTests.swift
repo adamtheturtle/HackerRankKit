@@ -14,7 +14,23 @@ import Testing
 
 @Suite("Pagination cursor parsing")
 struct CursorURLTests {
-    private let client = HackerRankClient(token: "test-token")
+    private let client: HackerRankClient = {
+        do {
+            return try HackerRankClient(token: "test-token")
+        } catch {
+            preconditionFailure("Invalid built-in HackerRank URL: \(error)")
+        }
+    }()
+
+    @Test
+    func `invalid base URL is rejected when the client is created`() {
+        do {
+            _ = try HackerRankClient(token: "test-token", baseURL: URL(fileURLWithPath: "/tmp"))
+            Issue.record("Expected the file URL to be rejected")
+        } catch {
+            // A malformed endpoint cannot produce a usable client.
+        }
+    }
 
     @Test
     func `a well-formed absolute cursor is used as-is`() throws {
@@ -56,7 +72,7 @@ struct CursorURLTests {
 
     @Test
     func `a cursor on a custom base URL host is accepted`() throws {
-        let regional = HackerRankClient(
+        let regional = try HackerRankClient(
             token: "test-token",
             baseURL: try #require(URL(string: "https://eu.hackerrank.example"))
         )
@@ -95,7 +111,7 @@ struct CursorURLTests {
         // These reads used to build the request through the transport directly, skipping
         // the check: a tokenless client sent `Authorization: Bearer ` and reported the
         // server's rejection instead of failing locally and predictably.
-        let tokenless = HackerRankClient(token: "", session: .shared)
+        let tokenless = try HackerRankClient(token: "", session: .shared)
         let reads: [(String, () async throws -> Void)] = [
             ("testsPage", { _ = try await tokenless.testsPage() }),
             ("searchUsers", { _ = try await tokenless.searchUsers(query: "ada") }),
