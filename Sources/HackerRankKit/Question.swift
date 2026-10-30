@@ -43,6 +43,9 @@ public nonisolated struct Question: Codable, Hashable, Identifiable, Sendable {
     /// Skills the question assesses.
     public let skills: [String]?
 
+    /// The project AI assistant system prompt, when returned by HackerRank.
+    public let customSystemPrompt: String?
+
     enum CodingKeys: String, CodingKey {
         case id
         case uniqueID = "unique_id"
@@ -57,6 +60,7 @@ public nonisolated struct Question: Codable, Hashable, Identifiable, Sendable {
         case tags
         case maxScore = "max_score"
         case skills
+        case customSystemPrompt = "custom_system_prompt"
     }
 
     public init(
@@ -72,7 +76,8 @@ public nonisolated struct Question: Codable, Hashable, Identifiable, Sendable {
         recommendedDuration: Int? = nil,
         tags: [String]? = nil,
         maxScore: Double? = nil,
-        skills: [String]? = nil
+        skills: [String]? = nil,
+        customSystemPrompt: String? = nil
     ) {
         self.id = id
         self.uniqueID = uniqueID
@@ -87,5 +92,6 @@ public nonisolated struct Question: Codable, Hashable, Identifiable, Sendable {
         self.tags = tags
         self.maxScore = maxScore
         self.skills = skills
+        self.customSystemPrompt = customSystemPrompt
     }
 }

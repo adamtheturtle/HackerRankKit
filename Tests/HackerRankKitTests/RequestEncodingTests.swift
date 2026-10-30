@@ -316,6 +316,49 @@ struct RequestEncodingTests {
         #expect(object["recommended_duration"] is NSNull)
     }
 
+    @Test(arguments: ["", "  Give hints.\nDo not solve.  ", String(repeating: "🐢", count: 15_000)])
+    func `project prompts preserve exact text on create and update`(_ prompt: String) throws {
+        let options = QuestionWriteOptions(customSystemPrompt: prompt)
+        let create = try encodedObject(CreateQuestionRequest(
+            name: "Project", type: "fullstack", problemStatement: "Build it.",
+            recommendedDuration: 60, options: options
+        ))
+        let update = try encodedObject(UpdateQuestionRequest(name: nil, type: nil, options: options))
+        #expect(create["custom_system_prompt"] as? String == prompt)
+        #expect(update["custom_system_prompt"] as? String == prompt)
+        #expect(create["configuration"] == nil)
+        #expect(update["configuration"] == nil)
+    }
+
+    @Test
+    func `project prompts can be omitted and reject overlong text`() throws {
+        let omitted = try encodedObject(UpdateQuestionRequest(name: nil, type: nil, options: .init()))
+        #expect(omitted["custom_system_prompt"] == nil)
+        let options = QuestionWriteOptions(customSystemPrompt: String(repeating: "x", count: 15_001))
+        #expect(throws: EncodingError.self) {
+            try encodedObject(CreateQuestionRequest(
+                name: "Project", type: "fullstack", problemStatement: "Build it.",
+                recommendedDuration: 60, options: options
+            ))
+        }
+        #expect(throws: EncodingError.self) {
+            try encodedObject(UpdateQuestionRequest(name: nil, type: nil, options: options))
+        }
+    }
+
+    @Test
+    func `project prompts decode when present and remain optional`() throws {
+        let decoder = JSONDecoder()
+        let present = try decoder.decode(Question.self, from: Data(
+            #"{"id":"q1","name":"Project","type":"fullstack","custom_system_prompt":"  Give hints.\n"}"#.utf8
+        ))
+        #expect(present.customSystemPrompt == "  Give hints.\n")
+        let absent = try decoder.decode(Question.self, from: Data(
+            #"{"id":"q1","name":"Project","type":"fullstack"}"#.utf8
+        ))
+        #expect(absent.customSystemPrompt == nil)
+    }
+
     @Test
     func `candidate update encodes documented optional fields`() throws {
         let request = UpdateCandidateRequest(

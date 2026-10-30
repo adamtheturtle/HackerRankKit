@@ -517,9 +517,8 @@ nonisolated struct UpdateQuestionRequest: Encodable {
     let options: QuestionWriteOptions
 }
 
-/// The wire keys shared by the question create and update bodies. Only fields the official
-/// `QuestionCreate`/`QuestionUpdate` schemas define appear: a key the server does not read
-/// would be dropped while the caller believed the change applied.
+/// The wire keys shared by question create and update bodies, including project
+/// system prompts confirmed by HackerRank support ahead of their API documentation.
 private enum QuestionWriteCodingKeys: String, CodingKey {
     case name
     case type
@@ -527,6 +526,7 @@ private enum QuestionWriteCodingKeys: String, CodingKey {
     case problemStatement = "problem_statement"
     case recommendedDuration = "recommended_duration"
     case internalNotes = "internal_notes"
+    case customSystemPrompt = "custom_system_prompt"
     case tags
     case options
     case answer
@@ -566,6 +566,13 @@ private nonisolated func encodeQuestionWriteBody(
     try container.encodeIfPresent(nonBlank(type), forKey: .type)
     try container.encodeIfPresent(options.languages, forKey: .languages)
     try container.encodeIfPresent(options.tags, forKey: .tags)
+    if let prompt = options.customSystemPrompt, prompt.unicodeScalars.count > 15_000 {
+        throw EncodingError.invalidValue(prompt, .init(
+            codingPath: container.codingPath,
+            debugDescription: "Custom system prompt must be at most 15,000 characters."
+        ))
+    }
+    try container.encodeIfPresent(options.customSystemPrompt, forKey: .customSystemPrompt)
     try container.encodeIfPresent(options.internalNotes, forKey: .internalNotes)
     try container.encodeIfPresent(options.mcqOptions, forKey: .options)
     try container.encodeIfPresent(options.answer, forKey: .answer)
@@ -586,7 +593,7 @@ private nonisolated func nonBlank(_ value: String?) -> String? {
 
 /// Optional fields for creating or updating questions.
 ///
-/// Only fields the official `QuestionCreate`/`QuestionUpdate` schemas define are modelled.
+/// Models documented question fields and project system prompts confirmed by HackerRank support.
 /// A question's `status`, `max_score`, and `skills` are not writable through these
 /// endpoints and are deliberately absent.
 public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
@@ -602,6 +609,9 @@ public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
     public let clearsRecommendedDuration: Bool
     /// The author's private notes. An explicit empty string clears them.
     public let internalNotes: String?
+    /// AI assistant system prompt for project questions, up to 15,000 Unicode scalars.
+    /// Text is preserved exactly. nil omits it; an empty string explicitly clears it.
+    public let customSystemPrompt: String?
     /// Tags to attach to the question.
     public let tags: [String]?
     /// The answer choices for an `mcq`/`multiple_mcq` question, in order.
@@ -617,11 +627,13 @@ public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
         tags: [String]? = nil,
         mcqOptions: [String]? = nil,
         answer: QuestionAnswer? = nil,
-        clearsRecommendedDuration: Bool = false
+        clearsRecommendedDuration: Bool = false,
+        customSystemPrompt: String? = nil
     ) {
         self.languages = Self.cleanList(languages)
         self.problemStatement = Self.nonBlank(problemStatement)
         self.recommendedDuration = recommendedDuration
+        self.customSystemPrompt = customSystemPrompt
         self.clearsRecommendedDuration = clearsRecommendedDuration
         // Empty text is meaningful on an update: it is how existing notes are cleared.
         // nil still means "not supplied".
