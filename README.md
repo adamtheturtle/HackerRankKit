@@ -40,10 +40,8 @@ let created = try await client.createTest(
 
 ## Project AI prompts
 
-Pass `QuestionWriteOptions(customSystemPrompt: "Give hints without solving the task.")`
-when creating or updating a project question.
-Prompts may contain up to 15,000 characters and are sent as the top-level
-`custom_system_prompt` field, as confirmed by HackerRank support.
+Pass `QuestionWriteOptions(customSystemPrompt: "Give hints without solving the task.")` when creating or updating a project question.
+Prompts may contain up to 15,000 characters and are sent as the top-level `custom_system_prompt` field, as confirmed by HackerRank support.
 `nil` omits the field; `""` explicitly clears it.
 Whitespace is preserved.
 `Question.customSystemPrompt` exposes the value when HackerRank returns it.
