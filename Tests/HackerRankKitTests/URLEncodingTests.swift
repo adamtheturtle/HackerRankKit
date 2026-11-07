@@ -124,6 +124,6 @@ struct URLEncodingTests {
         _ = try await client.auditLogPage(userID: "u+1")
 
         let url = try #require(recorder.urls.first)
-        #expect(url.contains("user_id=u%2B1"))
+        #expect(url.contains("user=u%2B1"))
     }
 }

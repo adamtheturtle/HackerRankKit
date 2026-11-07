@@ -69,7 +69,10 @@ nonisolated enum MockResponses {
     /// `/testcases/{id}`).
     private static let routes: [Route] = scimRoutes + testRoutes + candidateRoutes + questionRoutes
         + interviewRoutes + templateRoutes + userRoutes + teamRoutes + [
-            Route("GET", "\(apiV3)/audit_log") { MockFixtures.auditLog },
+            Route("GET", "\(apiV3)/audit_log/cursor") { _, query in
+            (200, query["cursor"] == nil ? MockFixtures.auditCursorFirst : MockFixtures.auditCursorLast)
+        },
+        Route("GET", "\(apiV3)/audit_log") { MockFixtures.auditLog },
             Route("POST", "\(apiV3)/ats/codepair", status: 201) { MockFixtures.atsInvite },
             Route("POST", "\(apiV3)/ats/codescreen", status: 201) { MockFixtures.atsInvite }
         ]
@@ -134,6 +137,9 @@ nonisolated enum MockResponses {
     private static let interviewRoutes: [Route] = [
         Route("GET", "\(apiV3)/interviews") { MockFixtures.interviews },
         Route("POST", "\(apiV3)/interviews", status: 201) { MockFixtures.createdInterview },
+        Route("GET", "\(apiV3)/interviews/*/artifacts") { MockFixtures.interviewArtifacts },
+        Route("GET", "\(apiV3)/interviews/*/notes") { MockFixtures.interviewNotes },
+        Route("PATCH", "\(apiV3)/interviews/*/notes") { MockFixtures.updatedInterviewNote },
         Route("GET", "\(apiV3)/interviews/*/transcript") { MockFixtures.interviewTranscript },
         Route("GET", "\(apiV3)/interviews/*") { MockFixtures.interviewDetail },
         Route("PUT", "\(apiV3)/interviews/*") { MockFixtures.createdInterview },
@@ -141,6 +147,8 @@ nonisolated enum MockResponses {
     ]
 
     private static let templateRoutes: [Route] = [
+        Route("PUT", "\(apiV3)/interview_templates/*/add_questions") { MockFixtures.interviewTemplate },
+        Route("DELETE", "\(apiV3)/interview_templates/*/remove_question") { MockFixtures.interviewTemplate },
         Route("GET", "\(apiV3)/interview_templates") { MockFixtures.interviewTemplates },
         Route("POST", "\(apiV3)/interview_templates", status: 201) { MockFixtures.interviewTemplate },
         Route("GET", "\(apiV3)/interview_templates/*") { MockFixtures.interviewTemplate },

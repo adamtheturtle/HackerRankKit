@@ -55,3 +55,23 @@ Whitespace is preserved.
 
 MIT.
 See [LICENSE](LICENSE).
+
+## Interviews V2 and audit logs
+
+`interviewArtifacts(id:)` returns either available metadata or a pending result carrying the server's `Retry-After` delay.
+Signed download URLs expire; request fresh metadata when needed.
+`interviewNotes(id:noteIDs:)` reads permitted notes and `updateInterviewNote(id:content:)` replaces the current user's note.
+
+Use `auditLogCursorPage(filters:includeTotal:)` for large audit collections, then pass only `nextCursor` to continue the same snapshot.
+`auditLogOffsetPage` exposes offset-window exhaustion metadata.
+The existing `auditLogPage(userID:)` now sends the documented `user` filter.
+
+Interview templates support adding question IDs and removing individual questions.
+`resourceJSON(path:after:query:)` preserves complete v3 JSON responses for integrations needing fields beyond the display models; continuation URLs are validated before authentication.
+
+## Complete operation catalogue
+
+`HackerRankClient.apiCatalogue()` includes all 76 documented v3 and SCIM operations and their request schemas.
+`executeAPI(_:pathParameters:query:body:scimToken:)` exposes every documented field and retains response status, headers and JSON, including empty and pending responses.
+SCIM calls require a separate provisioning credential; writes are sent once.
+`HackerRankAPIInputs` and the catalogue's resolved input schemas support API explorers and MCP integrations.

@@ -21,7 +21,7 @@ extension HackerRankClient {
     }
 
     /// The absolute `cursor` URL when continuing, or the first-page URL (base + path + `limit`,
-    /// plus an optional `user_id` filter) when starting.
+    /// plus an optional `user` filter) when starting.
     private func auditLogURL(cursor: String?, userID: String?) throws -> URL {
         if let cursor {
             guard let url = cursorURL(cursor) else {
@@ -33,7 +33,7 @@ extension HackerRankClient {
 
         var query = [URLQueryItem(name: "limit", value: String(Self.pageSize))]
         if let userID, !userID.isEmpty {
-            query.append(URLQueryItem(name: "user_id", value: userID))
+            query.append(URLQueryItem(name: "user", value: userID))
         }
         return try url(path: "\(Self.apiV3)/audit_log", query: query)
     }
