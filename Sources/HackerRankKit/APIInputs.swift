@@ -35,7 +35,9 @@ extension HackerRankAPICatalogue {
         ])
     }
 
-    private nonisolated func parameterType(_ parameter: HackerRankAPIParameter, location: String) -> HackerRankJSONValue {
+    private nonisolated func parameterType(
+        _ parameter: HackerRankAPIParameter, location: String
+    ) -> HackerRankJSONValue {
         location == "path" ? .array([.string("string"), .string("integer")]) : .string(parameter.type)
     }
 
