@@ -283,17 +283,17 @@ public nonisolated enum MockFixtures {
 
     static let interviewTemplates = #"""
     {"data":[
-      {"id":101,"name":"Backend Pairing","created_at":"2026-04-10T09:00:00Z","status":1,"user":4821,
-       "roles":["8b1o41tbpiq"],"team_share":1,"questions":["q1","q2"],"scorecard":98765,
+      {"id":"101","name":"Backend Pairing","created_at":"2026-04-10T09:00:00Z","status":1,"user":4821,
+       "roles":["8b1o41tbpiq"],"team_share":1,"questions":[1,2],"scorecard":98765,
        "import_template":true,"editor_access":true},
-      {"id":102,"name":"Frontend Pairing","created_at":"2026-04-11T09:00:00Z","status":1,"user":4821,
+      {"id":"102","name":"Frontend Pairing","created_at":"2026-04-11T09:00:00Z","status":1,"user":4821,
        "roles":[],"team_share":0,"questions":[],"import_template":true,"editor_access":false}
     ],"next":null}
     """#
 
     static let interviewTemplate = #"""
-    {"id":101,"name":"Backend Pairing","created_at":"2026-04-10T09:00:00Z","status":1,"user":4821,
-     "roles":["8b1o41tbpiq"],"team_share":1,"questions":["q1","q2"],"scorecard":98765,
+    {"id":"101","name":"Backend Pairing","created_at":"2026-04-10T09:00:00Z","status":1,"user":4821,
+     "roles":["8b1o41tbpiq"],"team_share":1,"questions":[1,2],"scorecard":98765,
      "import_template":true,"editor_access":true}
     """#
 
