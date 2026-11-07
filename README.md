@@ -55,3 +55,16 @@ Whitespace is preserved.
 
 MIT.
 See [LICENSE](LICENSE).
+
+## Interviews V2 and audit logs
+
+`interviewArtifacts(id:)` returns either available metadata or a pending result carrying the server's `Retry-After` delay.
+Signed download URLs expire; request fresh metadata when needed.
+`interviewNotes(id:noteIDs:)` reads permitted notes and `updateInterviewNote(id:content:)` replaces the current user's note.
+
+Use `auditLogCursorPage(filters:includeTotal:)` for large audit collections, then pass only `nextCursor` to continue the same snapshot.
+`auditLogOffsetPage` exposes offset-window exhaustion metadata.
+The existing `auditLogPage(userID:)` now sends the documented `user` filter.
+
+Interview templates support adding question IDs and removing individual questions.
+`resourceJSON(path:after:query:)` preserves complete v3 JSON responses for integrations needing fields beyond the display models; continuation URLs are validated before authentication.

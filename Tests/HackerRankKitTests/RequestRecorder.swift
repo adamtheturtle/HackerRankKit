@@ -16,11 +16,18 @@ final nonisolated class RequestRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private var recorded: [URLRequest] = []
     private var recordedBodies: [Data] = []
+    let responseHeaders: [String: String]
     private let handler: @Sendable (URL) -> (Int, Data)
 
     /// - Parameter handler: maps a requested URL to a status and a JSON body.
-    init(handler: @escaping @Sendable (URL) -> (Int, Data) = { _ in (200, Data(#"{"data":[],"next":null}"#.utf8)) }) {
+    init(
+        responseHeaders: [String: String] = [:],
+        handler: @escaping @Sendable (URL) -> (Int, Data) = { _ in
+            (200, Data(#"{"data":[],"next":null}"#.utf8))
+        }
+    ) {
         self.handler = handler
+        self.responseHeaders = responseHeaders
     }
 
     /// Every request made so far, in the order the protocol saw them.
@@ -82,10 +89,11 @@ enum RecordedClient {
     /// `handler`, never reaching the network.
     static func make(
         baseURL: URL = URL(string: "https://www.hackerrank.com") ?? URL(fileURLWithPath: "/"),
+        responseHeaders: [String: String] = [:],
         handler: @escaping @Sendable (URL) -> (Int, Data) = { _ in (200, Data(#"{"data":[],"next":null}"#.utf8)) }
     ) -> (client: HackerRankClient, recorder: RequestRecorder) {
         let token = "recorded-\(UUID().uuidString)"
-        let recorder = RequestRecorder(handler: handler)
+        let recorder = RequestRecorder(responseHeaders: responseHeaders, handler: handler)
         lock.withLock { recorders[token] = recorder }
 
         let config = URLSessionConfiguration.ephemeral
@@ -126,7 +134,8 @@ final nonisolated class RecordingURLProtocol: URLProtocol {
 
         let (status, body) = recorder.record(request)
         guard let response = HTTPURLResponse(
-            url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"]
+            url: url, statusCode: status, httpVersion: "HTTP/1.1",
+            headerFields: ["Content-Type": "application/json"].merging(recorder.responseHeaders) { _, supplied in supplied }
         ) else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
