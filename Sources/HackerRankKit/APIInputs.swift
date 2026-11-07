@@ -2,7 +2,7 @@ import Foundation
 
 extension HackerRankAPICatalogue {
     /// A self-contained JSON schema for the complete path/query/body input surface.
-    public func inputSchema(for operation: HackerRankAPIOperation) -> HackerRankJSONValue {
+    public nonisolated func inputSchema(for operation: HackerRankAPIOperation) -> HackerRankJSONValue {
         var properties: [String: HackerRankJSONValue] = [:]
         var required: [HackerRankJSONValue] = []
         for location in ["path", "query"] {
@@ -35,11 +35,11 @@ extension HackerRankAPICatalogue {
         ])
     }
 
-    private func parameterType(_ parameter: HackerRankAPIParameter, location: String) -> HackerRankJSONValue {
+    private nonisolated func parameterType(_ parameter: HackerRankAPIParameter, location: String) -> HackerRankJSONValue {
         location == "path" ? .array([.string("string"), .string("integer")]) : .string(parameter.type)
     }
 
-    private func resolve(_ value: HackerRankJSONValue, seen: Set<String>) -> HackerRankJSONValue {
+    private nonisolated func resolve(_ value: HackerRankJSONValue, seen: Set<String>) -> HackerRankJSONValue {
         switch value {
         case let .array(values): return .array(values.map { resolve($0, seen: seen) })
         case let .object(fields):
