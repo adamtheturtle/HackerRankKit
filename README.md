@@ -68,3 +68,10 @@ The existing `auditLogPage(userID:)` now sends the documented `user` filter.
 
 Interview templates support adding question IDs and removing individual questions.
 `resourceJSON(path:after:query:)` preserves complete v3 JSON responses for integrations needing fields beyond the display models; continuation URLs are validated before authentication.
+
+## Complete operation catalogue
+
+`HackerRankClient.apiCatalogue()` includes all 76 documented v3 and SCIM operations and their request schemas.
+`executeAPI(_:pathParameters:query:body:scimToken:)` exposes every documented field and retains response status, headers and JSON, including empty and pending responses.
+SCIM calls require a separate provisioning credential; writes are sent once.
+`HackerRankAPIInputs` and the catalogue's resolved input schemas support API explorers and MCP integrations.

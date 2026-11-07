@@ -39,6 +39,7 @@ let package = Package(
             dependencies: [
                 .product(name: "PaginatedRESTClient", package: "PaginatedRESTClient")
             ],
+            resources: [.process("Resources")],
             swiftSettings: swiftSettings
         ),
         .target(

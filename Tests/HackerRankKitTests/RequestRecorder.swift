@@ -90,11 +90,17 @@ enum RecordedClient {
     static func make(
         baseURL: URL = URL(string: "https://www.hackerrank.com") ?? URL(fileURLWithPath: "/"),
         responseHeaders: [String: String] = [:],
+        additionalBearerTokens: [String] = [],
         handler: @escaping @Sendable (URL) -> (Int, Data) = { _ in (200, Data(#"{"data":[],"next":null}"#.utf8)) }
     ) -> (client: HackerRankClient, recorder: RequestRecorder) {
         let token = "recorded-\(UUID().uuidString)"
         let recorder = RequestRecorder(responseHeaders: responseHeaders, handler: handler)
-        lock.withLock { recorders[token] = recorder }
+        lock.withLock {
+            recorders[token] = recorder
+            for alias in additionalBearerTokens {
+                recorders[alias] = recorder
+            }
+        }
 
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [RecordingURLProtocol.self]
@@ -133,9 +139,9 @@ final nonisolated class RecordingURLProtocol: URLProtocol {
         }
 
         let (status, body) = recorder.record(request)
+        let headers = recorder.responseHeaders.merging(["Content-Type": "application/json"]) { supplied, _ in supplied }
         guard let response = HTTPURLResponse(
-            url: url, statusCode: status, httpVersion: "HTTP/1.1",
-            headerFields: ["Content-Type": "application/json"].merging(recorder.responseHeaders) { _, supplied in supplied }
+            url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers
         ) else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
