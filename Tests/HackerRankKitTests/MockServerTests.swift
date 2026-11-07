@@ -344,7 +344,7 @@ struct MockServerTests {
         #expect(interviewTemplate.user == 4821)
         #expect(interviewTemplate.roles == ["8b1o41tbpiq"])
         #expect(interviewTemplate.teamShare == 1)
-        #expect(interviewTemplate.questions == ["q1", "q2"])
+        #expect(interviewTemplate.questions == ["1", "2"])
         #expect(interviewTemplate.scorecard == 98765)
         #expect(interviewTemplate.importTemplate == true)
         #expect(interviewTemplate.editorAccess == true)

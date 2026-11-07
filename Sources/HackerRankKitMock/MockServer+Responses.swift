@@ -130,7 +130,10 @@ nonisolated enum MockResponses {
         Route("DELETE", "\(apiV3)/questions/*/testcases/delete_all") { MockFixtures.questionOperationResult },
         Route("PUT", "\(apiV3)/questions/*/testcases/*") { MockFixtures.questionOperationResult },
         Route("DELETE", "\(apiV3)/questions/*/testcases/*") { MockFixtures.questionOperationResult },
-        Route("GET", "\(apiV3)/questions/*") { MockFixtures.questionDetail },
+        Route("GET", "\(apiV3)/questions/*") { url, _ in
+            showRecord(collection: MockFixtures.questions, fallback: MockFixtures.questionDetail,
+                       id: url.lastPathComponent, alias: "q\(url.lastPathComponent)")
+        },
         Route("PUT", "\(apiV3)/questions/*") { MockFixtures.writtenQuestion }
     ]
 
@@ -151,7 +154,10 @@ nonisolated enum MockResponses {
         Route("DELETE", "\(apiV3)/interview_templates/*/remove_question") { MockFixtures.interviewTemplate },
         Route("GET", "\(apiV3)/interview_templates") { MockFixtures.interviewTemplates },
         Route("POST", "\(apiV3)/interview_templates", status: 201) { MockFixtures.interviewTemplate },
-        Route("GET", "\(apiV3)/interview_templates/*") { MockFixtures.interviewTemplate },
+        Route("GET", "\(apiV3)/interview_templates/*") { url, _ in
+            showRecord(collection: MockFixtures.interviewTemplates, fallback: MockFixtures.interviewTemplate,
+                       id: url.lastPathComponent)
+        },
         // Sharing is its own pair of endpoints; the deprecated `team_share` field does nothing.
         Route("POST", "\(apiV3)/interview_templates/*/explicit_sharing_roles/update_access") {
             MockFixtures.interviewTemplateSharing
@@ -163,8 +169,32 @@ nonisolated enum MockResponses {
         // A template delete answers with a message, not with the template record.
         Route("DELETE", "\(apiV3)/interview_templates/*") { MockFixtures.deletedInterviewTemplate },
         Route("GET", "\(apiV3)/templates") { MockFixtures.inviteTemplates },
-        Route("GET", "\(apiV3)/templates/*") { MockFixtures.inviteTemplate }
+        Route("GET", "\(apiV3)/templates/*") { url, _ in
+            showRecord(collection: MockFixtures.inviteTemplates, fallback: MockFixtures.inviteTemplate,
+                       id: url.lastPathComponent)
+        }
     ]
+
+    /// Show the requested fixture rather than silently returning the first record.
+    private static func showRecord(
+        collection: String,
+        fallback: String,
+        id: String,
+        alias: String? = nil
+    ) -> (Int, String) {
+        guard let envelope = try? JSONSerialization.jsonObject(with: Data(collection.utf8)) as? [String: Any],
+              let rows = envelope["data"] as? [[String: Any]],
+              let fallbackRecord = try? JSONSerialization.jsonObject(with: Data(fallback.utf8)) as? [String: Any]
+        else { return (500, "{}") }
+
+        var record = fallbackRecord["id"] as? String == id ? fallbackRecord
+            : rows.first { ($0["id"] as? String) == id || ($0["id"] as? String) == alias } ?? fallbackRecord
+        record["id"] = id
+        guard let data = try? JSONSerialization.data(withJSONObject: record),
+              let body = String(data: data, encoding: .utf8) else { return (500, "{}") }
+
+        return (200, body)
+    }
 
     private static let userRoutes: [Route] = [
         Route("GET", "\(apiV3)/users") { MockFixtures.users },

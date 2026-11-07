@@ -81,14 +81,16 @@ public nonisolated struct InterviewTemplate: Decodable, Hashable, Identifiable, 
 
     public nonisolated init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = container.loggedDecodeIfPresent(Int.self, forKey: .id)
+        // The live list and show endpoints send a numeric string, unlike Swagger's integer schema.
+        id = container.loggedDecodeIfPresent(String.self, forKey: .id).flatMap(Int.init)
         name = container.loggedDecodeIfPresent(String.self, forKey: .name)
         createdAt = container.loggedDecodeIfPresent(String.self, forKey: .createdAt)
         status = container.loggedDecodeIfPresent(Int.self, forKey: .status)
         user = container.loggedDecodeIfPresent(Int.self, forKey: .user)
         roles = container.loggedDecodeIfPresent([String].self, forKey: .roles)
         teamShare = container.loggedDecodeIfPresent(Int.self, forKey: .teamShare)
-        questions = container.loggedDecodeIfPresent([String].self, forKey: .questions)
+        // Membership is a JSON number array. Keep public question identifiers consistent with Question.id.
+        questions = container.loggedDecodeIfPresent([Int].self, forKey: .questions)?.map(String.init)
         scorecard = container.loggedDecodeIfPresent(Int.self, forKey: .scorecard)
         importTemplate = container.loggedDecodeIfPresent(Bool.self, forKey: .importTemplate)
         editorAccess = container.loggedDecodeIfPresent(Bool.self, forKey: .editorAccess)
