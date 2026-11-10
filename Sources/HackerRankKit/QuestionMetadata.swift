@@ -2,9 +2,10 @@ import Foundation
 
 /// Selected metadata replacements. A nil field preserves its current value.
 /// Empty strings and lists, and a duration of zero, are explicit values.
-/// The question's identity and type remain unchanged.
+/// The question's identity remains unchanged. Its type is preserved unless selected.
 public nonisolated struct QuestionMetadataChanges: Sendable {
     public let name: String?
+    public let type: String?
     public let internalNotes: String?
     public let languages: [String]?
     public let problemStatement: String?
@@ -16,6 +17,7 @@ public nonisolated struct QuestionMetadataChanges: Sendable {
 
     public init(
         name: String? = nil,
+        type: String? = nil,
         internalNotes: String? = nil,
         languages: [String]? = nil,
         problemStatement: String? = nil,
@@ -26,6 +28,7 @@ public nonisolated struct QuestionMetadataChanges: Sendable {
         customSystemPrompt: String? = nil
     ) {
         self.name = name
+        self.type = type
         self.internalNotes = internalNotes
         self.languages = languages
         self.problemStatement = problemStatement
@@ -43,10 +46,11 @@ public nonisolated struct QuestionMetadataChanges: Sendable {
                 codingPath: [], debugDescription: "The question lacks required statement or duration metadata."
             ))
         }
-        try QuestionPromptValidation.validate(type: current.question.type, prompt: customSystemPrompt)
+        let effectiveType = type ?? current.question.type
+        try QuestionPromptValidation.validate(type: effectiveType, prompt: customSystemPrompt)
         var fields: [String: HackerRankJSONValue] = [
             "name": .string(name ?? current.question.name),
-            "type": .string(current.question.type),
+            "type": .string(effectiveType),
             "internal_notes": .string(internalNotes ?? current.internalNotes ?? ""),
             "languages": .array((languages ?? current.question.languages ?? []).map(HackerRankJSONValue.string)),
             "problem_statement": .string(statement),
