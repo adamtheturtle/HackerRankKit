@@ -84,6 +84,11 @@ extension HackerRankClient {
         guard !operation.bodyRequired || body != nil else {
             throw HackerRankError.http(0, "This operation requires a JSON body")
         }
+        path = Self.questionWritePath(method: operation.method, path: path)
+        if ["POST", "PUT"].contains(operation.method),
+           path.hasPrefix("\(Self.apiV3)/questions/") {
+            try QuestionPromptValidation.validate(body: body)
+        }
         let credential: String
         if operation.scim {
             guard let scimToken, !scimToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
