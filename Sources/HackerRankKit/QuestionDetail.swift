@@ -7,18 +7,20 @@ import Foundation
 
 /// The correct answer to a multiple-choice question.
 ///
-/// HackerRank returns a **one-based option index** for an `mcq`, and an array of them for a
-/// `multiple_mcq`. Reading the field as a string matched neither, so every MCQ answer
-/// decoded as nil.
+/// Preserve the API representation: a string, a single integer, or an integer array.
+/// Strings are never interpreted as option indices.
 public nonisolated enum QuestionAnswer: Codable, Hashable, Sendable {
+    /// The exact answer text returned by the API, including numeric-looking strings.
+    case text(String)
     /// The single correct option, as a one-based index into the question's options.
     case option(Int)
     /// The correct options, as one-based indices, for a multiple-answer question.
     case options([Int])
 
-    /// The correct answers as one-based indices, however the API expressed them.
+    /// Numeric answers as one-based indices. Text answers have no inferred indices.
     public var indices: [Int] {
         switch self {
+        case .text: []
         case let .option(index): [index]
         case let .options(indices): indices
         }
@@ -26,6 +28,10 @@ public nonisolated enum QuestionAnswer: Codable, Hashable, Sendable {
 
     public nonisolated init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
+        if let text = try? container.decode(String.self) {
+            self = .text(text)
+            return
+        }
         if let index = try? container.decode(Int.self) {
             self = .option(index)
             return
@@ -37,6 +43,7 @@ public nonisolated enum QuestionAnswer: Codable, Hashable, Sendable {
     public nonisolated func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
+        case let .text(text): try container.encode(text)
         case let .option(index): try container.encode(index)
         case let .options(indices): try container.encode(indices)
         }

@@ -7,7 +7,7 @@ An unofficial Swift client for the HackerRank for Work REST API, with typed mode
 ## Installation
 
 ```swift
-.package(url: "https://github.com/adamtheturtle/HackerRankKit.git", from: "0.8.0")
+.package(url: "https://github.com/adamtheturtle/HackerRankKit.git", from: "0.12.0")
 ```
 
 Releases before 0.8.0 modelled a wire contract that did not match the API, so 0.8.0 is the earliest version worth starting from.
@@ -45,6 +45,25 @@ Prompts may contain up to 15,000 characters and are sent as the top-level `custo
 `nil` omits the field; `""` explicitly clears it.
 Whitespace is preserved.
 `Question.customSystemPrompt` exposes the value when HackerRank returns it.
+
+## Question metadata and types
+
+`Question.knownType` exposes known `QuestionType` values while `Question.type` retains unknown server values.
+`Question.supportsCustomSystemPrompt` reports recognized project-prompt support.
+Known unsupported types reject a supplied prompt before a write, including an empty prompt.
+
+Use `updateQuestionMetadata(questionID:changes:)` with `QuestionMetadataChanges` for selected-field edits.
+It reads the current question, preserves required metadata, and omits other optional project settings.
+A missing statement or duration must be supplied by the caller before the helper can write.
+Nil fields preserve current values.
+Empty strings, empty lists, and zero are explicit changes.
+The read and write are separate requests without a concurrency lock.
+Writes are sent once.
+A successful empty response returns nil.
+The existing `updateQuestion` and complete API methods remain available for low-level requests.
+
+`QuestionAnswer.text` preserves string answers without interpreting them as option indices.
+See [UPGRADING.md](UPGRADING.md) when updating an exhaustive switch over answers.
 
 ## Requirements
 

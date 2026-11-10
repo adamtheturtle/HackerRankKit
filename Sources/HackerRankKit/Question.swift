@@ -22,6 +22,16 @@ public nonisolated struct Question: Codable, Hashable, Identifiable, Sendable {
     public let uniqueID: String?
     /// The question type (e.g. "code", "mcq").
     public let type: String
+    /// The known API type, when the raw value is recognized by this client.
+    public var knownType: QuestionType? {
+        QuestionType(rawValue: type)
+    }
+
+    /// Whether this client recognizes support for a project AI assistant prompt.
+    public var supportsCustomSystemPrompt: Bool {
+        knownType?.supportsCustomSystemPrompt == true
+    }
+
     /// The question's display name.
     public let name: String
     /// Identifier of the user who owns the question.

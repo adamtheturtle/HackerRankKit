@@ -566,12 +566,7 @@ private nonisolated func encodeQuestionWriteBody(
     try container.encodeIfPresent(nonBlank(type), forKey: .type)
     try container.encodeIfPresent(options.languages, forKey: .languages)
     try container.encodeIfPresent(options.tags, forKey: .tags)
-    if let prompt = options.customSystemPrompt, prompt.unicodeScalars.count > 15_000 {
-        throw EncodingError.invalidValue(prompt, .init(
-            codingPath: container.codingPath,
-            debugDescription: "Custom system prompt must be at most 15,000 characters."
-        ))
-    }
+    try QuestionPromptValidation.validate(type: type, prompt: options.customSystemPrompt)
     try container.encodeIfPresent(options.customSystemPrompt, forKey: .customSystemPrompt)
     try container.encodeIfPresent(options.internalNotes, forKey: .internalNotes)
     try container.encodeIfPresent(options.mcqOptions, forKey: .options)
@@ -616,7 +611,7 @@ public nonisolated struct QuestionWriteOptions: Sendable, Equatable {
     public let tags: [String]?
     /// The answer choices for an `mcq`/`multiple_mcq` question, in order.
     public let mcqOptions: [String]?
-    /// The correct answer, as one-based indices into ``mcqOptions``.
+    /// The correct answer in its original string or numeric representation.
     public let answer: QuestionAnswer?
 
     public init(

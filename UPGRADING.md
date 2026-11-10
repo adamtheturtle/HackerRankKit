@@ -3,6 +3,27 @@
 Breaking changes by release, with the before/after for each.
 Releases not listed here were additive.
 
+## 0.11.1 → 0.12.0
+
+`QuestionAnswer` adds `.text(String)` for answers returned as JSON strings.
+Update exhaustive switches to preserve or display that text.
+The existing numeric cases retain their behavior.
+`indices` returns an empty list for text answers rather than guessing an index convention.
+
+Known question types are available through `QuestionType` and `Question.knownType`.
+Raw string values remain supported so unknown future question types still decode.
+Prompt validation now rejects known unsupported types before sending a request.
+Fullstack prompts retain exact whitespace and explicit empty-string clearing.
+
+For selected metadata edits, use `updateQuestionMetadata(questionID:changes:)` and `QuestionMetadataChanges`.
+The helper reads current metadata strictly, preserves required fields, and omits optional settings that were not selected.
+It fails before PUT when required metadata is missing or malformed, and accepts successful empty write responses.
+Its GET and PUT are separate requests without concurrency locking.
+The existing low-level update method remains available.
+
+Typed and generic question writes use canonical trailing-slash paths.
+Read URLs and query encoding are unchanged.
+
 ## 0.8.2 → 0.9.0
 
 `HackerRankClient(token:baseURL:scimBaseURL:session:)` and `HackerRankClient.live(...)` now throw if the API base URL is not an absolute HTTP(S) origin.

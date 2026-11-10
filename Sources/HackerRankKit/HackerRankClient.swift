@@ -1062,7 +1062,7 @@ public struct HackerRankClient {
         guard !token.isEmpty else { throw HackerRankError.missingAPIKey }
 
         let request = RESTRequest(
-            url: try url(path: path, query: query, base: base),
+            url: try url(path: Self.questionWritePath(method: method, path: path), query: query, base: base),
             method: method,
             headers: [
                 "Authorization": "Bearer \(token)",
