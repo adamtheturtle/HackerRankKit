@@ -54,6 +54,7 @@ Known unsupported types reject a supplied prompt before a write, including an em
 
 Use `updateQuestionMetadata(questionID:changes:)` with `QuestionMetadataChanges` for selected-field edits.
 It reads the current question, preserves required metadata, and omits other optional project settings.
+An explicit type change is validated together with any selected prompt.
 A missing statement or duration must be supplied by the caller before the helper can write.
 Nil fields preserve current values.
 Empty strings, empty lists, and zero are explicit changes.

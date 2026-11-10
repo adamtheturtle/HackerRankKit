@@ -201,6 +201,32 @@ struct QuestionContractTests {
         #expect(recorder.requests.map(\.httpMethod) == ["GET", "PUT"])
     }
 
+    @Test(arguments: ["fullstack", "code"])
+    func selectedTypeControlsPromptValidation(_ type: String) async throws {
+        let snapshot = try encoded(HackerRankJSONValue.object(current()))
+        let (client, recorder) = RecordedClient.make { url in
+            url.absoluteString.hasSuffix("/") ? (204, Data()) : (200, snapshot)
+        }
+        if type == "code" {
+            await #expect(throws: EncodingError.self) {
+                try await client.updateQuestionMetadata(
+                    questionID: "q1", changes: .init(type: type, customSystemPrompt: "")
+                )
+            }
+            #expect(recorder.requests.map(\.httpMethod) == ["GET"])
+        } else {
+            _ = try await client.updateQuestionMetadata(
+                questionID: "q1", changes: .init(type: type, customSystemPrompt: "")
+            )
+            let payload = try HackerRankClient.makeDecoder().decode(
+                HackerRankJSONValue.self, from: #require(recorder.bodies.last)
+            )
+            guard case let .object(fields) = payload else { Issue.record("Expected metadata"); return }
+            #expect(fields["type"] == .string(type))
+            #expect(fields["custom_system_prompt"] == .string(""))
+        }
+    }
+
     @Test
     func metadataReadFailuresDoNotWrite() async throws {
         let (client, recorder) = RecordedClient.make { _ in (403, Data()) }
