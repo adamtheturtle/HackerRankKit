@@ -7,7 +7,8 @@ An unofficial Swift client for the HackerRank for Work REST API.
 `HackerRankKit` is the lean wire layer for the [HackerRank for Work](https://www.hackerrank.com/work) v3 API: typed models for tests, candidates, questions, interviews, users, teams, and the audit log; encode-only request bodies; a raw ``HackerRankError``; and the ``HackerRankClient`` that drives them all.
 The client wraps a generic paginated transport, so list calls follow the `next` cursor, idempotent GETs retry on transient failures, and JSON decoding happens off the main actor.
 
-The library is deliberately presentation-free and locale-free: it carries the facts the API returns and leaves how to phrase or display them to you.
+The library returns data from the API.
+The client formats and localizes that data.
 The companion `HackerRankKitMock` product ships an in-process fake of the API, backed by canned fixtures, for demo modes and tests with no network.
 
 > Note: This is an unofficial client and is not affiliated with or endorsed by HackerRank.

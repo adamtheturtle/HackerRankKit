@@ -10,7 +10,7 @@ An unofficial Swift client for the HackerRank for Work REST API, with typed mode
 .package(url: "https://github.com/adamtheturtle/HackerRankKit.git", from: "0.12.0")
 ```
 
-Releases before 0.8.0 modelled a wire contract that did not match the API, so 0.8.0 is the earliest version worth starting from.
+Start with release 0.8.0 or later for the corrected API contract.
 Upgrading from an earlier one?
 See [UPGRADING.md](UPGRADING.md).
 
@@ -78,7 +78,7 @@ See [LICENSE](LICENSE).
 
 ## Interviews V2 and audit logs
 
-`interviewArtifacts(id:)` returns either available metadata or a pending result carrying the server's `Retry-After` delay.
+`interviewArtifacts(id:)` returns either available metadata or a pending result with the server's `Retry-After` delay.
 Signed download URLs expire; request fresh metadata when needed.
 `interviewNotes(id:noteIDs:)` reads permitted notes and `updateInterviewNote(id:content:)` replaces the current user's note.
 

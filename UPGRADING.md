@@ -59,7 +59,7 @@ if let id = template.id,
 ```
 
 Revoke with ``HackerRankClient/unshareInterviewTemplate(id:from:)``.
-A grant's target is a team, a single user, or the whole company, and its role is `.viewer` or `.editor`.
+A grant's target is a team, one user, or the whole company, and its role is `.viewer` or `.editor`.
 Both calls reject an empty list locally, because the endpoint requires at least one role.
 
 `InterviewTemplate.teamShare` remains because the server still sends it.
@@ -166,14 +166,14 @@ print(interview.interview.title)       // was unavailable
 
 ### Option types that lost properties
 
-Each of these named a key the API does not define.
+These keys were absent from the API contract.
 Setting one looked like it configured the request while the server ignored it.
 
 - `TestWriteOptions`: `library`, `skills`, `type` removed; `role: String?` became `roleIDs: [String]?`.
 - `QuestionWriteOptions`: `status`, `maxScore`, `clearsMaxScore`, `skills` removed; `internalNotes`, `mcqOptions`, and `answer` added.
 - `InterviewTemplateWriteOptions` is replaced by `InterviewTemplateCreateOptions` and `InterviewTemplateUpdateOptions`, because the two endpoints accept different fields.
   `title`, `description`, `tags`, and `metadata` are gone; `roleID`, `teamShare`, `questionIDs` (create) and `scorecardID` (update) are new.
-- `CodeStubGenerationOptions`: `returnType` → `functionReturn`, `languages` → `allowedLanguages`, and the `parameters: [CodeStubParameter]` array became a single `functionParams` signature string such as `"INTEGER param1 STRING param2"`.
+- `CodeStubGenerationOptions`: `returnType` → `functionReturn`, `languages` → `allowedLanguages`, and the `parameters: [CodeStubParameter]` array became one `functionParams` signature string such as `"INTEGER param1 STRING param2"`.
   `CodeStubParameter` is gone.
 
 `CandidateInviteOptions` was renamed almost field for field:
@@ -210,13 +210,13 @@ Everything else is additive: `Test`, `TestCandidate`, `User`, `Team`, `Question`
 ### Changes with no compiler error
 
 These alter behaviour while existing code still builds.
-They are the ones worth grepping for.
+Search the source for these names.
 
 - **Assessment windows now decode.** `Test.startTime` and `Test.endTime` read the live keys `start_time` / `end_time`, and fall back to the schema's `starttime` / `endtime`.
   Writes still send the schema spelling, which the server accepts and echoes back underscored.
 - **Tests with sections are no longer dropped.**
   Live accounts return `sections` as an array of objects; the schema documents an object.
-  Both shapes decode, and the lenient page decoder no longer discards the whole assessment.
+  Both formats decode, and the lenient page decoder no longer discards the whole assessment.
 - **Invite template content now decodes**, under `content` rather than the nonexistent `body`.
 - **Transcript timestamps are milliseconds.** `InterviewMessage.timestamp` is 13-digit epoch ms, as the API returns.
   Anything doing `Date(timeIntervalSince1970: Double(timestamp))` was producing dates tens of thousands of years out; use `InterviewMessage.sentAt`.
@@ -229,4 +229,4 @@ They are the ones worth grepping for.
   Without it the server omits every field `TestDetail` models, so in 0.7.x that read could return nothing at all.
 - **`HackerRankKitMock` now answers 404/405.**
   A route the API does not expose is no longer a canned success.
-  Tests that leaned on the old catch-all will fail — which is the point.
+  Update tests that rely on the old catch-all.

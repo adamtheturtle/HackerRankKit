@@ -74,10 +74,10 @@ Two deliberate differences from the old app mock:
 
 - **Only success + unauthorized scenarios.**
   The old `RANKBUDDY_DEMO_SCENARIO` empty/malformed/throttled/server_error modes are **not** in the package (CoderPadKit has no equivalent).
-  If the app still needs those for demoing UI states or screenshots, keep a thin app-side `URLProtocol` for them; otherwise drop them.
+  To demo UI states or take screenshots, provide a small `URLProtocol` in the app.
 - **No captured request bodies.**
   The old mock's `lastRequestBody(forPath:)` is gone.
-  Write-flow tests that asserted the exact JSON sent should instead assert on the returned echo record, or keep a small app-side capturing protocol.
+  In write-flow tests, assert on the returned record or use an app-side protocol to capture the submitted JSON.
 
 ## 6. Re-add user-facing error text
 
